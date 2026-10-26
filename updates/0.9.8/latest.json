@@ -1,0 +1,16 @@
+{
+  "version": "0.9.8",
+  "date": "2026-10-26",
+  "notes": [
+    "Повтор: 1 нажатие — весь альбом или плейлист, 2 — один трек",
+    "Перемешивание теперь работает: включается и выключается, исходный порядок возвращается",
+    "Обложка в мини-плеере крупнее",
+    "Точка «есть обновление» — снаружи аватара",
+    "Раздел «Для разработчика» по паролю"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.9.8/pulse-app-0.9.8.zip",
+  "sha256": "b5f4d1672ade5d6fa2577a883f096e98c6bc3c8c18611736e71881b3d1d3993a",
+  "size": 369018,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest"
+}
