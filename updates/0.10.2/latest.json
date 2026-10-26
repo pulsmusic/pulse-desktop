@@ -1,0 +1,13 @@
+{
+  "version": "0.10.2",
+  "date": "2026-10-27",
+  "notes": [
+    "Свечение в карточке квиза больше не рябит",
+    "Звёзды на фоне квиза падают; в облегчённых эффектах стоят на месте"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.10.2/pulse-app-0.10.2.zip",
+  "sha256": "c17512fa6d2b48eba1d30fe554ab258ccd2aed3759e76cfffcd00b0dfac8e114",
+  "size": 410790,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest"
+}
