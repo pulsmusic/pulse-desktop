@@ -1,0 +1,13 @@
+{
+  "version": "0.9.5",
+  "date": "2026-10-26",
+  "notes": [
+    "Чёрная тема: только чёрный фон, без света и цветов",
+    "Кнопка «Проверить обновления» в профиле — обновления ставятся без переустановки"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.9.5/pulse-app-0.9.5.zip",
+  "sha256": "931c2c2df6f2d18cafc457478c13d518942e5f7ff6747564774bc80015380066",
+  "size": 349308,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest"
+}

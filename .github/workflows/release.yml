@@ -1,0 +1,49 @@
+# Выпуск обновления «Пульса» для Windows.
+# Когда в репозиторий приходит тег v<версия>, GitHub сам создаёт релиз и прикрепляет к нему:
+#   • updates/<версия>/latest.json и pulse-app-<версия>.zip — их скачивает кнопка «Проверить обновления»;
+#   • установщик Pulse-Desktop-Alpha-Setup.exe — из папки обновления, если он там есть, иначе из прошлого релиза
+#     (чтобы ссылка github.com/pulsmusic/pulse-desktop/releases/latest всегда вела к установщику).
+name: Выпуск обновления
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Проверка файлов
+        run: |
+          VER="${GITHUB_REF_NAME#v}"; DIR="updates/$VER"
+          test -f "$DIR/latest.json" || { echo "Нет $DIR/latest.json"; exit 1; }
+          test -f "$DIR/pulse-app-$VER.zip" || { echo "Нет $DIR/pulse-app-$VER.zip"; exit 1; }
+          python3 - "$DIR" "$VER" <<'PY'
+          import hashlib, json, sys
+          d, v = sys.argv[1], sys.argv[2]
+          m = json.load(open(f"{d}/latest.json", encoding="utf-8"))
+          z = open(f"{d}/pulse-app-{v}.zip", "rb").read()
+          assert m["version"] == v, "версия в latest.json не совпадает с тегом"
+          assert m["sha256"] == hashlib.sha256(z).hexdigest(), "контрольная сумма не совпадает"
+          assert m["size"] == len(z), "размер не совпадает"
+          print("Файлы в порядке:", v, len(z), "байт")
+          PY
+      - name: Релиз
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER="${GITHUB_REF_NAME#v}"; DIR="updates/$VER"
+          FILES=("$DIR/latest.json" "$DIR/pulse-app-$VER.zip")
+          if [ -f "$DIR/Pulse-Desktop-Alpha-Setup.exe" ]; then
+            FILES+=("$DIR/Pulse-Desktop-Alpha-Setup.exe")
+          else
+            PREV=$(gh release list -R "$GITHUB_REPOSITORY" --limit 30 --exclude-drafts --exclude-pre-releases --json tagName -q '.[0].tagName')
+            if [ -n "$PREV" ]; then
+              mkdir -p prev
+              gh release download "$PREV" -R "$GITHUB_REPOSITORY" -p 'Pulse-Desktop-Alpha-Setup.exe' -D prev || true
+              [ -f prev/Pulse-Desktop-Alpha-Setup.exe ] && FILES+=(prev/Pulse-Desktop-Alpha-Setup.exe)
+            fi
+          fi
+          NOTES=$(python3 -c "import json,sys;print('\n'.join('• '+n for n in json.load(open(sys.argv[1], encoding='utf-8'))['notes']))" "$DIR/latest.json")
+          gh release create "$GITHUB_REF_NAME" "${FILES[@]}" -R "$GITHUB_REPOSITORY" --title "Пульс $VER" --notes "$NOTES" --latest
