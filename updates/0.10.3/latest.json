@@ -1,0 +1,12 @@
+{
+  "version": "0.10.3",
+  "date": "2026-10-27",
+  "notes": [
+    "Режим разработчика: сколько человек сейчас в «Пульсе»"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.10.3/pulse-app-0.10.3.zip",
+  "sha256": "fbdaff29fd1326aedf3bf1f7625ffad8586b6dd52ac04ada67ed8f0c50b6e682",
+  "size": 412974,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest"
+}
