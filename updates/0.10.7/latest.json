@@ -1,0 +1,14 @@
+{
+  "version": "0.10.7",
+  "date": "2026-10-27",
+  "notes": [
+    "Обновление устанавливается сразу до последней доступной версии, без промежуточных шагов",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.10.7/pulse-app-0.10.7.zip",
+  "sha256": "508200ffb4e32bce55d6e10258cb509a248f51f64b50c0264563dd7a3025639f",
+  "size": 413290,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
