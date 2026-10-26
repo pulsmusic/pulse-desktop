@@ -1,0 +1,16 @@
+{
+  "version": "0.11.0",
+  "date": "2026-10-27",
+  "notes": [
+    "Новый дизайн полноэкранного плеера в стиле мобильного приложения",
+    "Плавная смена обложки при переключении треков",
+    "Очередь и текст песни открываются панелью рядом с плеером",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.11.0/pulse-app-0.11.0.zip",
+  "sha256": "017584b336443766fbfd4b30ad5142eb21e7e39567011a5d1365d83a44c66125",
+  "size": 418582,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
