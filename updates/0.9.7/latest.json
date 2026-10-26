@@ -1,0 +1,13 @@
+{
+  "version": "0.9.7",
+  "date": "2026-10-26",
+  "notes": [
+    "Баннер о новой версии с кнопками «Отменить» и «Установить обновление»",
+    "Обновление ставится прямо из баннера, с прогрессом"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.9.7/pulse-app-0.9.7.zip",
+  "sha256": "6c4aab266386115f54f88e8a9b627010960e6a7e0e1ebb2aff28d29af5d45db2",
+  "size": 366950,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest"
+}
