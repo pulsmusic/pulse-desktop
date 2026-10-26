@@ -1,0 +1,14 @@
+{
+  "version": "0.10.9",
+  "date": "2026-10-27",
+  "notes": [
+    "В мини-плеере отображаются аватары исполнителей, если у трека их несколько",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.10.9/pulse-app-0.10.9.zip",
+  "sha256": "694eb9d6234b7dd07ada4533de1ab05306c0e9f28c7e9d234a5d9aa3b33e7857",
+  "size": 416540,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
