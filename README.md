@@ -6,4 +6,4 @@
 из файла `latest.json` последнего релиза.
 
 Как выходит новая версия: в папку `updates/<версия>/` кладутся `latest.json` и `pulse-app-<версия>.zip`,
-ставится тег `v<версия>` — GitHub Actions (`.github/workflows/release.yml`) сам проверяет файлы и создаёт релиз.
+отправляются в main — GitHub Actions (`.github/workflows/release.yml`) сам проверяет файлы и создаёт релиз.
