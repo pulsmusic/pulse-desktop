@@ -1,0 +1,16 @@
+{
+  "version": "0.10.8",
+  "date": "2026-10-27",
+  "notes": [
+    "В «Моём пульсе» появились фильтры: настроение, характер подборки и язык",
+    "Исправлена ошибка, из-за которой «Мой пульс» мог прекратить подгрузку треков",
+    "Следующий трек начинается без паузы на загрузку",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.10.8/pulse-app-0.10.8.zip",
+  "sha256": "707dd82e1f2435f26a85c3c98e0bbbfc8456c7d2cc73f3438d437ee9d42eb3d9",
+  "size": 415706,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
