@@ -1,0 +1,14 @@
+{
+  "version": "0.10.10",
+  "date": "2026-10-27",
+  "notes": [
+    "Улучшено отображение исполнителей в мини-плеере: нажмите на аватары, чтобы выбрать исполнителя",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.10.10/pulse-app-0.10.10.zip",
+  "sha256": "5fa3cd68abee754101bcee17c12f09ad3fcb11e45d678ba5f160a562ec3a8ff9",
+  "size": 416579,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
