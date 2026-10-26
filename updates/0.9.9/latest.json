@@ -1,0 +1,14 @@
+{
+  "version": "0.9.9",
+  "date": "2026-10-26",
+  "notes": [
+    "Базовая защита: токен Яндекса хранится зашифрованным средствами Windows",
+    "Ссылки открываются только на сайты Яндекса и GitHub, окно не уходит на чужие страницы",
+    "Инструменты разработчика — только в режиме разработчика"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.9.9/pulse-app-0.9.9.zip",
+  "sha256": "3f7db138163926e90fe1d456ca26823df9fca878be8ea5026cbdaf1b95f10598",
+  "size": 372433,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest"
+}
