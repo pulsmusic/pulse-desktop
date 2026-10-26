@@ -1,0 +1,12 @@
+{
+  "version": "0.9.6",
+  "date": "2026-10-26",
+  "notes": [
+    "Убраны полоски между разделами на странице артиста"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.9.6/pulse-app-0.9.6.zip",
+  "sha256": "a6f04854dae40871e648e888807ce109a7725b3de2ac0bf5830200e3ed0bbdb5",
+  "size": 349328,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest"
+}
