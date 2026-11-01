@@ -1,0 +1,15 @@
+{
+  "version": "0.12.7",
+  "date": "2026-11-01",
+  "notes": [
+    "Исправлено отображение коротких строк и подпевок в живом тексте",
+    "Улучшены анимации открытия и закрытия текста песни",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.12.7/pulse-app-0.12.7.zip",
+  "sha256": "890ba461e3d43c9b858cd0b9083cc5cf4ace9a316ef4af33b84709c1dd3c730a",
+  "size": 433222,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
