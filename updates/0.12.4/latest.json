@@ -1,0 +1,16 @@
+{
+  "version": "0.12.4",
+  "date": "2026-11-01",
+  "notes": [
+    "Обновлено оформление карточек в «Моём пульсе»: мягкий градиент в цвет обложки",
+    "На карточках появились аватары исполнителей — нажмите, чтобы перейти к нужному артисту",
+    "Улучшен внешний вид аватаров исполнителей",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.12.4/pulse-app-0.12.4.zip",
+  "sha256": "a34a6e071fd1c4818109a14134867ce2700415ed545637b269215c1c69a140b7",
+  "size": 431445,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
