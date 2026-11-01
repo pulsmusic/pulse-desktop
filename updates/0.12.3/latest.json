@@ -1,0 +1,16 @@
+{
+  "version": "0.12.3",
+  "date": "2026-11-01",
+  "notes": [
+    "Плавная смена строк в живом тексте и мягкое размытие",
+    "Текст лучше успевает за песней; при необходимости его можно сдвинуть раньше или позже",
+    "Кнопка текста песни в мини-плеере",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.12.3/pulse-app-0.12.3.zip",
+  "sha256": "bbb3d085db0eee237d35a050b2b8c1f392c8d40a0f6490ea4749ff90c4e28529",
+  "size": 430976,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
