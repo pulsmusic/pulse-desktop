@@ -1,0 +1,15 @@
+{
+  "version": "0.14.0",
+  "date": "2026-11-01",
+  "notes": [
+    "Обновлена главная: персональные подборки, лучшие треки любимых артистов, музыка под настроение, новые релизы и ваши плейлисты",
+    "Добавлены страницы подборок и плейлистов «Лучшее» для каждого артиста",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.0/pulse-app-0.14.0.zip",
+  "sha256": "bc22e98725932a473544ee38a3b090f3f5afac824ba5e03930220a096d5956e6",
+  "size": 466807,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
