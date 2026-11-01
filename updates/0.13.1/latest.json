@@ -1,0 +1,15 @@
+{
+  "version": "0.13.1",
+  "date": "2026-11-01",
+  "notes": [
+    "Живой текст точнее следует за исполнителем: подсветка останавливается в паузах между словами",
+    "Строка текста завершается вместе с последним спетым словом",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.13.1/pulse-app-0.13.1.zip",
+  "sha256": "01ee150516dacc32da60fe9f39ee8a4c72e3440fd5c2e230d38cde74a6164044",
+  "size": 441434,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
