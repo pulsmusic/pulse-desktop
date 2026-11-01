@@ -1,0 +1,15 @@
+{
+  "version": "0.14.6",
+  "date": "2026-11-02",
+  "notes": [
+    "Улучшена точность ИИ-разметки живого текста",
+    "Добавлена кнопка «Есть ошибка?»: ИИ заново разметит основной текст или эдлибы",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.6/pulse-app-0.14.6.zip",
+  "sha256": "f4c965b3d59d220693380295cafae94d0e5c7dd3a6e1d0cd4b27fde0363a471a",
+  "size": 690802,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
