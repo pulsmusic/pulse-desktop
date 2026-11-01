@@ -1,0 +1,15 @@
+{
+  "version": "0.14.4",
+  "date": "2026-11-01",
+  "notes": [
+    "Исправлена ошибка, из-за которой у карточек плейлистов пропадало скругление после наведения",
+    "Исправлена ошибка, из-за которой не всегда загружались фото исполнителей",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.4/pulse-app-0.14.4.zip",
+  "sha256": "fd787580060f1bece84371d4baa17bdbe47c6112457785d09d0466dd3e210eba",
+  "size": 468157,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
