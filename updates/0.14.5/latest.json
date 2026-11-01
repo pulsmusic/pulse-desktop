@@ -1,0 +1,15 @@
+{
+  "version": "0.14.5",
+  "date": "2026-11-02",
+  "notes": [
+    "Улучшена плавность живого текста при смене строк",
+    "Исправлена ошибка, из-за которой прошедшая строка размывалась повторно",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.5/pulse-app-0.14.5.zip",
+  "sha256": "90df22031491b6d3e1ae0a7b78b89f8f97580bab186c58444b986f7dd8761236",
+  "size": 468549,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
