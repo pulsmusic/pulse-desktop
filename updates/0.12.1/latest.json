@@ -1,0 +1,15 @@
+{
+  "version": "0.12.1",
+  "date": "2026-11-01",
+  "notes": [
+    "Новый живой текст: строки поверх фона плеера, подсветка по буквам с мягким свечением",
+    "Если у песни есть текст со временем каждого слова, подсветка идёт точно по словам",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.12.1/pulse-app-0.12.1.zip",
+  "sha256": "49604f1e0ba95ccb1c6c8cf7d56be5321db6cb8519575f1abceb8e4be881fe99",
+  "size": 429660,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
