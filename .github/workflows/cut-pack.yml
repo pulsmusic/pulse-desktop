@@ -42,7 +42,10 @@ jobs:
           os.makedirs("pack/test/img", exist_ok=True)
           fs = [f for f in list_repo_files("Xenova/transformers.js-docs", repo_type="dataset") if re.search(r"\.(jpe?g|png)$", f, re.I)]
           print("фото в наборе:", fs)
-          for f in fs[:40]:
+          ppl = [f for f in fs if re.search(r"portrait|woman|man|person|people|face|selfie|girl|boy|astronaut|artemis|match|crowd|player", f, re.I)]
+          rest = [f for f in fs if f not in ppl]
+          print("с людьми:", ppl)
+          for f in ppl + rest[:14]:
               try:
                   p = hf_hub_download("Xenova/transformers.js-docs", f, repo_type="dataset")
                   if os.path.getsize(p) < 3_000_000: shutil.copy(p, "pack/test/img/" + os.path.basename(f))

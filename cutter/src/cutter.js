@@ -20,7 +20,10 @@ async function load() {
 export async function cut(bytes) {
   await load();
   const blob = new Blob([bytes]);
-  const img = await RawImage.fromBlob(blob);
+  let img = await RawImage.fromBlob(blob);
+  // фото артистов — 400×400; большие картинки уменьшаем до 512 по длинной стороне (иначе медленно)
+  const big = Math.max(img.width, img.height);
+  if (big > 512) img = await img.resize(Math.round(img.width * 512 / big), Math.round(img.height * 512 / big));
   const W = img.width, H = img.height;
   // 1. есть ли человек, и достаточно ли он крупный
   const found = await det(img, { threshold: 0.6, percentage: true });
