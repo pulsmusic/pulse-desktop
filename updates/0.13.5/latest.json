@@ -1,0 +1,15 @@
+{
+  "version": "0.13.5",
+  "date": "2026-11-01",
+  "notes": [
+    "Добавлены анимации кнопок плеера и действий",
+    "Новая анимация повтора трека",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.13.5/pulse-app-0.13.5.zip",
+  "sha256": "f6cfe2abc4b90f1c8e79a284d73c56395f5a148a78af7b17351048cfc41fecad",
+  "size": 462613,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
