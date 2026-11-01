@@ -63,7 +63,8 @@ async function forced(run, seg, text, language) {
   const feats = (await run.processor(seg)).input_features;
   const out = await model.generate({ inputs: feats, decoder_input_ids: [...prefix, ...ids], max_new_tokens: 1, return_token_timestamps: true, num_frames: Math.floor(seg.length / 320) });   // кадры внимания энкодера — 50 в секунду
   const ts = out.token_timestamps.tolist()[0];
-  return first.map((i) => +ts[prefix.length + i]);
+  // token_timestamps[k] — момент, когда «начался» токен k-1 (нулевой элемент — начало), поэтому +1
+  return first.map((i) => +ts[prefix.length + i + 1]);
 }
 
 export async function alignTrack(job, onProgress = () => {}) {
