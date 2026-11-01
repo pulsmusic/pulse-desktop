@@ -77,7 +77,8 @@ async function yandex(id: string, format: 'LRC' | 'TEXT') {
 }
 
 // общая база ИИ-разметки (Cloudflare): тот же отпечаток текста, что и на компьютере
-const fingerprint = (lines: Line[]) => hex(sha256(utf8(lines.map((l) => String(l.text || '').trim().toLowerCase()).join('\n')))).slice(0, 16);
+// «v3\n» — новая база разметки (с версии ПК 0.14.6): старые разметки не используются
+const fingerprint = (lines: Line[]) => hex(sha256(utf8('v3\n' + lines.map((l) => String(l.text || '').trim().toLowerCase()).join('\n')))).slice(0, 16);
 async function aiTimes(id: string, lines: Line[]): Promise<[number, number[]][] | null> {
   try { const r = await get(`${ALIGN}/align?id=${encodeURIComponent(id)}&h=${fingerprint(lines)}`, { ms: 7000 }); return r && r.ok && r.v && Array.isArray(r.v.lines) ? r.v.lines : null; } catch { return null; }
 }

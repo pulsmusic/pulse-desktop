@@ -2,7 +2,7 @@
   "expo": {
     "name": "Пульс",
     "slug": "pulse",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "orientation": "portrait",
     "icon": "./assets/icon/icon-dark.png",
     "userInterfaceStyle": "automatic",
@@ -10,7 +10,7 @@
     "splash": { "image": "./assets/icon/splash-dark.png", "resizeMode": "cover", "backgroundColor": "#1a0b33" },
     "android": {
       "package": "ru.pulse.app",
-      "versionCode": 4,
+      "versionCode": 5,
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon/android-foreground.png",
