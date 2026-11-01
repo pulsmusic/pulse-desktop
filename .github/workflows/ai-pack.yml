@@ -64,7 +64,10 @@ jobs:
         if: always()
         with:
           name: ai-test-report
-          path: aligner/test-report.json
+          path: |
+            aligner/test-report.json
+            aligner/pack/test/song.wav
+            aligner/pack/test/song.json
           if-no-files-found: ignore
       - name: Публикация
         env:
