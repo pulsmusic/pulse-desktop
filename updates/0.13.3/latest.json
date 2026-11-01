@@ -1,0 +1,14 @@
+{
+  "version": "0.13.3",
+  "date": "2026-11-01",
+  "notes": [
+    "В живом тексте появился значок, показывающий работу ИИ-разметки",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.13.3/pulse-app-0.13.3.zip",
+  "sha256": "dae488b34545176ac90d4eb3749ab4874552682a1d377eb25bb67811673be91e",
+  "size": 459996,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
