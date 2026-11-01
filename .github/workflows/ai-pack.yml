@@ -30,7 +30,10 @@ jobs:
           sudo apt-get install -y espeak-ng >/dev/null
           pip install -q huggingface_hub
       - name: Сборка
-        run: node build.mjs
+        run: |
+          node build.mjs
+          echo "--- prompt_ids в transformers.js:"; grep -o "prompt_ids[^;]\{0,80\}" node_modules/@huggingface/transformers/dist/transformers.web.js | head -5 || true
+          ls node_modules/@huggingface/transformers/package.json && node -p "require('./node_modules/@huggingface/transformers/package.json').version" 
       - name: Модель
         run: |
           python3 - <<'PY'

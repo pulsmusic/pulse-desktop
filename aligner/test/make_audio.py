@@ -23,16 +23,18 @@ voice, truth, lrc = [], [], []
 t = 1.5
 for lang, text in LINES:
     words = [w.strip("(),.") for w in text.split()]
-    line_t = t; ws = []
-    for w in words:
-        s = synth(w, lang)
-        start = int(t * SR)
-        if len(voice) < start + len(s): voice += [0.0] * (start + len(s) - len(voice))
-        for i, v in enumerate(s): voice[start + i] += v
-        ws.append(round(t, 3)); t += len(s) / SR + random.uniform(0.06, 0.16)
+    # вся строка целиком (естественная интонация), а время слов — по длительностям слов, синтезированных по одному,
+    # растянутым на длину строки (точность такой «правды» ~0,1 с)
+    full = synth(" ".join(words), lang)
+    lens = [len(synth(w, lang)) for w in words]; tot = sum(lens)
+    start = int(t * SR)
+    if len(voice) < start + len(full): voice += [0.0] * (start + len(full) - len(voice))
+    for i, v in enumerate(full): voice[start + i] += v
+    acc = 0; ws = []
+    for L in lens: ws.append(round(t + acc / tot * len(full) / SR, 3)); acc += L
     truth.append(ws)
-    lrc.append({"t": round(max(0, line_t + random.uniform(-0.3, 0.25)), 2), "text": text})   # LRC неточный, как в жизни
-    t += random.uniform(0.6, 1.4)
+    lrc.append({"t": round(max(0, t + random.uniform(-0.3, 0.25)), 2), "text": text})   # LRC неточный, как в жизни
+    t += len(full) / SR + random.uniform(0.6, 1.4)
 dur = t + 2; n = int(dur * SR); voice += [0.0] * (n - len(voice))
 # «музыка»: смена аккордов каждые 2 с, бочка на каждую долю (120 bpm), немного шума
 mus = [0.0] * n
