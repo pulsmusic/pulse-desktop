@@ -1,0 +1,71 @@
+# Android-версия «Пульса» (mobile/ — Expo, React Native). Собирает APK и проверяет его в эмуляторе Android.
+# Готовая сборка выкладывается в служебный пред-релиз android-build (подписана временным ключом CI);
+# итоговый APK подписывается постоянным ключом разработчика и выкладывается в релиз «android» отдельно
+# (ключ в репозиторий не кладётся). Обновлений программы для Windows это не касается.
+name: Android (APK)
+on:
+  push:
+    branches: [main]
+    paths: ['mobile/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: android
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      EXPO_NO_TELEMETRY: '1'
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Проект Expo (SDK 54)
+        run: |
+          npx --yes create-expo-app@latest app --template blank-typescript@sdk-54 --no-install
+          cp app/app.json app/app.template.json
+          cd app && rm -f App.tsx && cp -r ../mobile/App.tsx ../mobile/src ../mobile/assets .
+          node ../mobile/merge-app-json.js app.json ../mobile/app.json ../mobile/VERSION
+          npm install --no-audit --no-fund
+          npx expo install expo-audio expo-blur expo-haptics react-native-reanimated react-native-worklets react-native-safe-area-context @react-native-async-storage/async-storage @expo/vector-icons expo-image-picker expo-linear-gradient react-native-gesture-handler expo-file-system expo-intent-launcher expo-splash-screen
+          npm ls expo react-native react react-native-reanimated expo-audio --depth=0 || true
+          cat app.json
+      - name: Проверка типов (для журнала)
+        run: cd app && (npx tsc --noEmit 2>&1 | head -80) || true
+      - name: Сборка APK
+        run: |
+          cd app && npx expo prebuild -p android --no-install
+          cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
+          ls -la app/build/outputs/apk/release/
+      - name: KVM для эмулятора
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Проверка в эмуляторе Android 14
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash mobile/ci-smoke.sh app/android/app/build/outputs/apk/release/app-release.apk smoke
+      - name: Публикация сборки
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(head -1 mobile/VERSION | tr -d '[:space:]')
+          F=()
+          [ -f app/android/app/build/outputs/apk/release/app-release.apk ] && cp app/android/app/build/outputs/apk/release/app-release.apk "pulse-android-$V-ci.apk" && F+=("pulse-android-$V-ci.apk")
+          for x in smoke/*; do [ -f "$x" ] && F+=("$x"); done
+          (cd app && npx tsc --noEmit > ../tsc.txt 2>&1 || true); F+=(tsc.txt)
+          gh release view android-build -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create android-build -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Android — служебная сборка" --notes "Сборка CI для проверки. Итоговый APK — в релизе android." --prerelease --latest=false
+          gh release upload android-build "${F[@]}" -R "$GITHUB_REPOSITORY" --clobber
