@@ -1,0 +1,16 @@
+{
+  "version": "0.12.6",
+  "date": "2026-11-01",
+  "notes": [
+    "Улучшено размытие строк живого текста — мягкие края без обрезки",
+    "При прокрутке текста вручную строки становятся чёткими",
+    "Следующие строки текста стали приглушённее",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.12.6/pulse-app-0.12.6.zip",
+  "sha256": "7bfc08fd836460813ab06c94cdafcc2e17a0d3e90e53d54c34b97b120cedd001",
+  "size": 433013,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
