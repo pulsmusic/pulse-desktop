@@ -1,0 +1,14 @@
+{
+  "version": "0.13.4",
+  "date": "2026-11-01",
+  "notes": [
+    "Улучшена подсветка подпевок в живом тексте",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.13.4/pulse-app-0.13.4.zip",
+  "sha256": "f738daad317401a0a1002b67f5e7e7a454b826a23688bd3cb3cd9bd09c4a5ecf",
+  "size": 459875,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
