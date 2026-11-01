@@ -32,8 +32,9 @@ jobs:
       - name: Сборка
         run: |
           node build.mjs
-          echo "--- prompt_ids в transformers.js:"; grep -o "prompt_ids[^;]\{0,80\}" node_modules/@huggingface/transformers/dist/transformers.web.js | head -5 || true
-          ls node_modules/@huggingface/transformers/package.json && node -p "require('./node_modules/@huggingface/transformers/package.json').version" 
+          ls node_modules/@huggingface/transformers/dist/ | head; node -p "require('./node_modules/@huggingface/transformers/package.json').version"
+          F=$(ls node_modules/@huggingface/transformers/dist/*.mjs | head -1); echo "файл $F"
+          for k in prompt_ids decoder_input_ids _extract_token_timestamps forced_decoder_ids; do echo "--- $k"; grep -o ".\{0,120\}$k.\{0,160\}" "$F" | head -6; done
       - name: Модель
         run: |
           python3 - <<'PY'

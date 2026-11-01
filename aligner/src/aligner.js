@@ -38,9 +38,10 @@ function windows(lines, dur) {
   lines.forEach((l, i) => {
     const t = +l.t, end = i + 1 < lines.length ? +lines[i + 1].t : Math.min(dur, t + 8);
     if (!tokens(l.text).length) return;
-    if (cur && end - cur.a <= 28) { cur.b = end; cur.text += ' ' + l.text; return; }
+    const lang = cyr(l.text) >= lat(l.text) ? 'ru' : 'en';
+    if (cur && end - cur.a <= 28 && (cur.lang === lang || !(cyr(l.text) + lat(l.text)))) { cur.b = end; cur.text += ' ' + l.text; return; }
     if (cur) W.push(cur);
-    cur = { a: Math.max(0, t - 0.6), b: end, text: l.text };
+    cur = { a: Math.max(0, t - 0.6), b: end, text: l.text, lang };
     if (cur.b - cur.a > 28) cur.b = cur.a + 28;
   });
   if (cur) W.push(cur);
