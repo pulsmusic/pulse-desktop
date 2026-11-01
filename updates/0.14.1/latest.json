@@ -1,0 +1,14 @@
+{
+  "version": "0.14.1",
+  "date": "2026-11-01",
+  "notes": [
+    "При возврате назад страница открывается на том же месте, где вы были",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.1/pulse-app-0.14.1.zip",
+  "sha256": "9764dd276694cb4ca65bac563dbd91fd12b8db051c2cb1721bd62890bc612dc9",
+  "size": 466889,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
