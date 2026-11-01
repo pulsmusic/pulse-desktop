@@ -7,7 +7,11 @@ import { BlurView as XBlur } from 'expo-blur';
 // включено только у постоянных элементов — меню, мини-плеера и верхней кромки (live). Остальное стекло на Android —
 // плотная полупрозрачная заливка без размытия: выглядит так же спокойно, но не грузит телефон.
 const AND = Platform.OS === 'android';
-export const BlurView = ({ live, ...p }: any) => (AND ? (live ? <XBlur {...p} experimentalBlurMethod="dimezisBlurView" blurReductionFactor={8} /> : null) : <XBlur {...p} />);
+// На Android размытия нет совсем: оно захватывает и текст поверх стекла (текст «светился») и сильно грузит
+// старые телефоны. Стекло на Android — плотная полупрозрачная заливка.
+export const BlurView = ({ live, ...p }: any) => (AND ? null : <XBlur {...p} />);
+// облегчённый режим для Android: без масок, размытия и частых перерисовок фона
+export const LITE = AND;
 import { LinearGradient } from 'expo-linear-gradient';
 import { LOGO_URI, LOGO_RATIO, STAR_URI, IMP_URI, IMP_RATIO, IMP_STAR_URI, STAR4_URI, STAR_HD_URI, STAR_OUT_URI, GLOW_URI, LSTAR_URI, LSTAR_RATIO, LSTAR_PAD, LSTAR_ICON_URI, LSTAR_ICON_OUT_URI, LSTAR_ICON_PAD, LSTAR_HD_URI, LSTAR_HD_PAD, LSTAR_LINE_URI, STAR_GLOW_URI, STAR_GLOW_PAD, STAR_SOFT_URI, STAR_SOFT_PAD, IMP_STAR_GLOW_URI, IMP_STAR_GLOW_PAD, IMP_STAR_SOFT_URI, IMP_STAR_SOFT_PAD, LSTAR_GLOW_URI, LSTAR_GLOW_PAD, STAR_FADE_URI, IMP_STAR_FADE_URI, LSTAR_FADE_URI, LSTAR_HD_FADE_URI } from './logoData';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -165,7 +169,7 @@ export const Matte = ({ style, children, radius = 22, strong, shadow = false, po
         {/* размытие чуть больше самой кнопки и обрезано по скруглению: у края размытия iOS подмешивает фон
             снаружи — получалось светлое кольцо внутри (будто кнопка залита не до края). Теперь край ровный */}
         <BlurView live={live} intensity={T.blur} tint={T.tint} style={GLASS_OVER} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: strong || (AND && !live) ? T.matteStrong : T.matte }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: strong || AND ? T.matteStrong : T.matte }]} />
       </View>
       {children}
     </View>
@@ -624,7 +628,7 @@ export function LStarIcon({ w, color, on }: { w: number; color: string; on: bool
 // следом подъезжает его копия, и так бесконечно. Края мягко растворяются: справа всегда,
 // слева — только пока текст едет (в покое первая буква не «тает»).
 let MV: any = null;
-try { MV = require('@react-native-masked-view/masked-view').default; } catch { MV = null; }
+try { MV = AND ? null : require('@react-native-masked-view/masked-view').default; } catch { MV = null; }
 const GAP = 56, SPEED = 34;   // зазор между копиями (pt) и скорость (pt/с)
 export function Marquee({ text, style, height, onPress, fade = 26 }: { text: string; style: any; height: number; onPress?: () => void; fade?: number }) {
   const [W, setW] = useState(0); const [w, setTw] = useState(0); const vis = useVisible(); const aw = useAwake();
@@ -771,8 +775,8 @@ let ambN = 0, ambActive = true; const ambSubs = new Set<() => void>();
 const ambSync = () => ambSubs.forEach((f) => f());
 try { AppState.addEventListener('change', (st) => { ambActive = st === 'active'; ambSync(); }); } catch {}
 const AMB_ACC = makeMutable(0);
-// на Android фон обновляется 15 раз в секунду (на iPhone — 30): свет медленный, разницы не видно, а стекло размывается вдвое реже
-const AMB_STEP = Platform.OS === 'android' ? 66 : 33;
+// на Android фон обновляется 10 раз в секунду (на iPhone — 30): свет медленный, разницы не видно, а стекло размывается вдвое реже
+const AMB_STEP = Platform.OS === 'android' ? 100 : 33;
 const AMB_SPD = makeMutable(1);   // скорость фона: 1 — обычная, 0 — замер (плавный переход между ними)
 export function AmbientDriver() {
   const [on, setOn] = useState(false); const aw = useAwake();

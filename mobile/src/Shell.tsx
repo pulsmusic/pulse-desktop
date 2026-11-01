@@ -62,7 +62,8 @@ const island = (padT: number) => (Platform.OS === 'ios' ? (padT >= 51 ? { y: pad
 // @react-native-masked-view/masked-view (npx expo install @react-native-masked-view/masked-view) — для мягкого
 // размытия у верхнего края. Без неё край просто плавно растворяется в цвет фона.
 let MaskedView: any = null;
-try { MaskedView = require('@react-native-masked-view/masked-view').default; } catch { MaskedView = null; }
+// на Android маски не используем: они перерисовывают весь экран в отдельный буфер на каждом кадре прокрутки
+try { MaskedView = Platform.OS === 'android' ? null : require('@react-native-masked-view/masked-view').default; } catch { MaskedView = null; }
 
 // Аватар, который при прокрутке вверх уходит в «остров»: уменьшается, размывается, темнеет и исчезает в нём —
 // как в Telegram. p — прогресс 0…1 (0 — на месте, 1 — уже в острове).
@@ -155,6 +156,8 @@ function Top({ left, right, home, plain, extra, edge = true }: { left?: React.Re
   const T = useT(); const padT = useTopPad();
   const c = plain ? (T.dark ? '0,0,0' : '255,255,255') : (T.dark ? '13,14,20' : '215,221,237');
   const g = plain ? smooth(c, 0.62, 0, 0, 1, 7) : { colors: [`rgba(${c},0.98)`, `rgba(${c},0.88)`, `rgba(${c},0)`], locations: [0, 0.62, 1] };
+  // на Android (без масок) кромка легче — сквозь неё видны лучи света
+  if (Platform.OS === 'android' && !plain) { g.colors = [`rgba(${c},0.72)`, `rgba(${c},0.45)`, `rgba(${c},0)`]; }
   return (
     <>
       {/* без masked-view — прежнее мягкое растворение в цвет фона; с ней содержимое тает само (FadeTop) */}
@@ -685,7 +688,7 @@ function FavArt({ size }: { size: number }) {
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Animated.View pointerEvents="none" style={[{ position: 'absolute' }, glow]}><Glow size={size * 0.95} color="#ffffff" /></Animated.View>
-      <Animated.View style={heart}><Ionicons name="heart" size={size * 0.38} color="#fff" style={{ textShadowColor: 'rgba(255,255,255,0.9)', textShadowRadius: size * 0.06 }} /></Animated.View>
+      <Animated.View style={heart}><Ionicons name="heart" size={size * 0.38} color="#fff" /></Animated.View>
     </View>
   );
 }
@@ -2229,7 +2232,7 @@ function BgLayer({ u, first }: { u: string; first: boolean }) {
   return (
     <Animated.View style={[StyleSheet.absoluteFill, wrap]}>
       <Animated.Image source={{ uri: u }} blurRadius={22} onLoad={fade} style={[StyleSheet.absoluteFill, s1]} />
-      <Animated.Image source={{ uri: u }} blurRadius={22} style={[StyleSheet.absoluteFill, s2, { opacity: 0.55 }]} />
+      {Platform.OS !== 'android' && <Animated.Image source={{ uri: u }} blurRadius={22} style={[StyleSheet.absoluteFill, s2, { opacity: 0.55 }]} />}
     </Animated.View>
   );
 }

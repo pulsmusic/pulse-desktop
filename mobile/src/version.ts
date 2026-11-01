@@ -1,3 +1,3 @@
 // Версия Android-сборки (её же сверяет обновление). Меняется при каждом выпуске (mobile/VERSION в репозитории).
-export const APP_VERSION = '0.2.2';
-export const APP_BUILD = 3;
+export const APP_VERSION = '0.2.3';
+export const APP_BUILD = 4;
