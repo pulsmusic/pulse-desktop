@@ -1,0 +1,17 @@
+{
+  "version": "0.12.5",
+  "date": "2026-11-01",
+  "notes": [
+    "Добавлен полноэкранный режим — клавиша F11 или кнопка в верхней панели и в плеере",
+    "Текст песни теперь располагается напротив обложки",
+    "Улучшено размытие прошедших строк текста",
+    "Снижена нагрузка на процессор и видеокарту — приложение работает тише и экономнее",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.12.5/pulse-app-0.12.5.zip",
+  "sha256": "a1aa92df00edaf5c38ca55c14723dc06f0ec60e9c08366f3d802d22d4d1a72b6",
+  "size": 432794,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
