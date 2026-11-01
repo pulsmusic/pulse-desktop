@@ -41,7 +41,15 @@ export async function cut(bytes) {
   let inS = 0, inN = 0, outS = 0, outN = 0;
   for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) { const v = m[y * W + x] / 255; if (x >= bx0 && x < bx1 && y >= by0 && y < by1) { inS += v; inN++; } else { outS += v; outN++; } }
   const inF = inS / Math.max(1, inN), outF = outS / Math.max(1, outN);
-  if (inF < 0.3) return { person: false, why: 'силуэт не выделился (' + inF.toFixed(2) + ')' };
+  // проверка качества: если маска плохая — лучше обычная обложка, чем рваный артист
+  if (inF < 0.4) return { person: false, why: 'силуэт рваный (' + inF.toFixed(2) + ')' };
+  if (outF > 0.22) return { person: false, why: 'фон не отделился (' + outF.toFixed(2) + ')' };
+  // середина фигуры (лицо и грудь): там не должно быть дыр
+  const cx0 = bx0 + (bx1 - bx0) * 0.3, cx1 = bx0 + (bx1 - bx0) * 0.7, cy0 = by0 + (by1 - by0) * 0.12, cy1 = by0 + (by1 - by0) * 0.6;
+  let cS = 0, cN = 0, holes = 0;
+  for (let y = Math.round(cy0); y < cy1; y += 2) for (let x = Math.round(cx0); x < cx1; x += 2) { const v = m[y * W + x] / 255; cS += v; cN++; if (v < 0.5) holes++; }
+  const core = cS / Math.max(1, cN), holeF = holes / Math.max(1, cN);
+  if (core < 0.85 || holeF > 0.06) return { person: false, why: 'дыры в силуэте (' + core.toFixed(2) + ', ' + holeF.toFixed(2) + ')' };
   // 3. PNG с прозрачным фоном, обрезанный по силуэту (+ запас 2%)
   const cv = new OffscreenCanvas(W, H); const g = cv.getContext('2d');
   const rgba = img.rgba();

@@ -42,8 +42,8 @@ jobs:
           import json
           for m in ["yolos-tiny", "modnet"]:
               pc = f"pack/models/{m}/preprocessor_config.json"; c = json.load(open(pc)); print(m, "было:", json.dumps(c))
-              # детектору хватает 320 точек (ищем крупного человека) — втрое быстрее; вырезанию — 384
-              side = 320 if m == "yolos-tiny" else 384
+              # детектору хватает 320 точек (ищем крупного человека) — в разы быстрее; вырезанию — 512 (аккуратнее волосы)
+              side = 320 if m == "yolos-tiny" else 512
               if isinstance(c.get("size"), dict):
                   if "shortest_edge" in c["size"]: c["size"] = {"shortest_edge": side, "longest_edge": side * 2}
                   elif "height" in c["size"]: c["size"] = {"height": side, "width": side}
