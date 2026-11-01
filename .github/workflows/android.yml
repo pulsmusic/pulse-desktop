@@ -34,7 +34,8 @@ jobs:
           cd app && rm -f App.tsx && cp -r ../mobile/App.tsx ../mobile/src ../mobile/assets .
           node ../mobile/merge-app-json.js app.json ../mobile/app.json ../mobile/VERSION
           npm install --no-audit --no-fund
-          npx expo install expo-audio expo-blur expo-haptics react-native-reanimated react-native-worklets react-native-safe-area-context @react-native-async-storage/async-storage @expo/vector-icons expo-image-picker expo-linear-gradient react-native-gesture-handler expo-file-system expo-intent-launcher expo-splash-screen
+          npx expo install expo-audio expo-blur expo-haptics react-native-reanimated react-native-worklets react-native-safe-area-context @react-native-async-storage/async-storage @expo/vector-icons expo-image-picker expo-linear-gradient react-native-gesture-handler expo-file-system expo-intent-launcher expo-splash-screen react-native-svg expo-image @react-native-masked-view/masked-view
+          npm install --no-audit --no-fund jpeg-js
           npx expo install --fix || true
           npm dedupe --no-audit --no-fund || true
           npm ls --depth=0 || true

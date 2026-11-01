@@ -14,7 +14,7 @@ import type { Track } from './api';
 import { usePlayer } from './player';
 import { analyze, NB } from './spectrum';
 import { blendHex, blend3, cosmosOf } from './theme';
-import { Matte, Press, Ic, Cover, useT, useTy, SVGLIB, EASE_OUT, rise, once, GlassBtn, hap, AMB, useAmbient, useVisible } from './ui';
+import { Matte, Press, Ic, Cover, useT, useTy, useWin, SVGLIB, EASE_OUT, rise, once, GlassBtn, hap, AMB, useAmbient, useVisible } from './ui';
 import { QUIZ_PATH, QUIZ_VB, GLINT_URI, GLINT_LIGHT_URI, GLINT_BOX } from './quizData';
 
 const SF = Platform.OS === 'ios' ? 'System' : undefined;
@@ -242,7 +242,7 @@ export function QuizCard({ id, name, onStart }: { id: number; name: string; onSt
 
 // ---------- Экран квиза ----------
 export function QuizScreen({ id, name, back }: { id: number; name: string; back: () => void }) {
-  const T: any = useT(); const ty = useTy(); const P = usePlayer(); const ins = useSafeAreaInsets(); const { width: W, height: H } = useWindowDimensions();
+  const T: any = useT(); const ty = useTy(); const P = usePlayer(); const ins = useSafeAreaInsets(); const { width: W, height: H } = useWin();
   const padT = Math.max(ins.top, Platform.OS === 'ios' ? 47 : 0);
   const [qs, setQs] = useState<Q[] | null>(null); const [err, setErr] = useState(false);
   const [i, setI] = useState(0); const [picked, setPicked] = useState<number | null>(null);

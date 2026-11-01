@@ -1,6 +1,9 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { Pressable, Image, View, Text, StyleSheet, Platform, AppState } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { Pressable, Image, View, Text, StyleSheet, Platform, AppState, useWindowDimensions } from 'react-native';
+import { BlurView as XBlur } from 'expo-blur';
+// Матовое стекло. На Android обычный BlurView не размывает (только полупрозрачная заливка) — включаем
+// настоящее размытие (как на iPhone); на iOS всё как было.
+export const BlurView = (p: any) => <XBlur {...p} {...(Platform.OS === 'android' ? { experimentalBlurMethod: 'dimezisBlurView', blurReductionFactor: 4 } : null)} />;
 import { LinearGradient } from 'expo-linear-gradient';
 import { LOGO_URI, LOGO_RATIO, STAR_URI, IMP_URI, IMP_RATIO, IMP_STAR_URI, STAR4_URI, STAR_HD_URI, STAR_OUT_URI, GLOW_URI, LSTAR_URI, LSTAR_RATIO, LSTAR_PAD, LSTAR_ICON_URI, LSTAR_ICON_OUT_URI, LSTAR_ICON_PAD, LSTAR_HD_URI, LSTAR_HD_PAD, LSTAR_LINE_URI, STAR_GLOW_URI, STAR_GLOW_PAD, STAR_SOFT_URI, STAR_SOFT_PAD, IMP_STAR_GLOW_URI, IMP_STAR_GLOW_PAD, IMP_STAR_SOFT_URI, IMP_STAR_SOFT_PAD, LSTAR_GLOW_URI, LSTAR_GLOW_PAD, STAR_FADE_URI, IMP_STAR_FADE_URI, LSTAR_FADE_URI, LSTAR_HD_FADE_URI } from './logoData';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -15,6 +18,17 @@ import { usePlayer, useCurId, usePlaying, useTheme } from './player';
 import { artistPhoto, bigArt, smallArt, KIND_LABEL } from './api';
 import { RAYS_A, RAYS_B, LIGHT_GLOW } from './waterData';
 import type { Track } from './api';
+
+// Настоящий размер экрана приложения. На Android «окно» без системных полос меньше, чем то, что
+// рисует приложение от края до края, — из-за этого полный плеер раньше открывался не до конца.
+// Корень приложения сообщает свой размер (onLayout), и все экраны считают от него.
+let rootW = 0, rootH = 0; const rootL = new Set<() => void>();
+export function setRootSize(w: number, h: number) { if (Math.abs(w - rootW) < 1 && Math.abs(h - rootH) < 1) return; rootW = w; rootH = h; rootL.forEach((f) => f()); }
+export function useWin() {
+  const d = useWindowDimensions(); const [, f] = useState(0);
+  useEffect(() => { const g = () => f((x) => x + 1); rootL.add(g); return () => { rootL.delete(g); }; }, []);
+  return rootH ? { ...d, width: rootW, height: rootH } : d;
+}
 
 // Цвета темы — из отдельного контекста: компоненты, которым нужны только цвета, не перерисовываются
 // при смене трека, паузе, лайках и т.п. (раньше любое изменение в плеере перерисовывало весь интерфейс).

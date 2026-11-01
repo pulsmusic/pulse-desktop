@@ -18,7 +18,7 @@ import { usePlayer, usePlaying, useProgress } from './player';
 import { openAi } from './ai';
 import { Sky } from './Quiz';
 import { cosmosOf } from './theme';
-import { SHEET, useT, useTy, Press, Matte, Glow, LStar, PIcon, Explicit, BrokenHeart, SVGLIB, Marquee, PlayPause, GlassBtn, HeartFill, AiIcon, hap, WaterLight, setFullOrigin, useAwake } from './ui';
+import { SHEET, useT, useTy, useWin, Press, Matte, Glow, LStar, PIcon, Explicit, BrokenHeart, SVGLIB, Marquee, PlayPause, GlassBtn, HeartFill, AiIcon, hap, WaterLight, setFullOrigin, useAwake } from './ui';
 import type { Hap } from './ui';
 import { LSTAR_UP, LSTAR_LO, LSTAR_RATIO } from './logoData';
 // тактильная отдача — общая (ui.tsx → hap): здесь короткие имена для совместимости
@@ -32,7 +32,7 @@ const rnd = (n: number) => { const x = Math.sin(n * 12.9898 + 4.1) * 43758.5453;
 const abs = StyleSheet.absoluteFill;
 
 function useArea() {
-  const ins = useSafeAreaInsets(); const { width: W, height: H } = useWindowDimensions();
+  const ins = useSafeAreaInsets(); const { width: W, height: H } = useWin();
   const top = Math.max(ins.top, Platform.OS === 'ios' ? 47 : 0) + 56;
   const bottom = DOCK_B + TAB_H + 12;
   return { W, H, top, bottom, avail: H - top - bottom };
@@ -318,7 +318,7 @@ function PLike({ t }: { t: Track }) {
 // Лайк — в «Любимое», дизлайк — бан: трек больше никогда не попадётся в «Моём пульсе» (вернуть — в профиле).
 // Оптимизация: жест и движения карточек — на UI-потоке, без пружин; звёзды стоят, пока вкладка скрыта.
 export function Cosmos({ on, active }: { on: boolean; active: boolean }) {
-  const T: any = useT(); const { width: W, height: H } = useWindowDimensions(); const dk = !!T.dark;
+  const T: any = useT(); const { width: W, height: H } = useWin(); const dk = !!T.dark;
   const k = useSharedValue(on ? 0.3 : 1);
   useEffect(() => { k.value = withTiming(on ? 0.3 : 1, { duration: 900, easing: EASE }); }, [on]);
   const st = useAnimatedStyle(() => ({ opacity: k.value }));
@@ -524,8 +524,9 @@ function Attract({ openFull, onReset, active = true }: { openFull: () => void; o
   // нажатие на карточку — плеер «вырастает» из неё: запоминаем, где карточка на экране, и открываем
   const deckRef = useRef<View>(null);
   const openFromCard = () => {
-    const v: any = deckRef.current; if (!v?.measureInWindow) { openFull(); return; }
-    v.measureInWindow((x: number, y: number, w: number, h: number) => {
+    const v: any = deckRef.current; if (!v?.measure) { openFull(); return; }
+    // measure (от корня приложения), а не measureInWindow: на Android окно начинается под строкой состояния
+    v.measure((_a: number, _b: number, w: number, h: number, x: number, y: number) => {
       if (w > 0) setFullOrigin({ x: x + w / 2 - cw / 2 + SLOTS[0].x, y: y + h / 2 - ch / 2 + SLOTS[0].y, w: cw, h: ch });
       openFull();
     });
@@ -553,7 +554,7 @@ function Attract({ openFull, onReset, active = true }: { openFull: () => void; o
           </Animated.View>
           <Text style={[ty.title1, { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.5, marginTop: 18, color: T.dark ? '#f5f5f7' : T.ink }]}>Мой пульс</Text>
           <Animated.Text key={sub} entering={FadeIn.duration(320).easing(EASE)} style={[ty.subhead, { textAlign: 'center', marginTop: 6, marginHorizontal: 44, color: T.dark ? 'rgba(245,245,247,0.7)' : T.ink3 }]}>{sub}</Animated.Text>
-          <View style={{ marginTop: 22, flexDirection: 'row', gap: 8 }}><CfgButton cfg={cfg} onPress={() => setSheet(true)} /><AiBtn /></View>
+          <View style={{ marginTop: 22, flexDirection: 'row', gap: 8 }}><CfgButton cfg={cfg} onPress={() => setSheet(true)} /></View>
           <Press onPress={launch} to={0.95} style={{ marginTop: 16, height: 52, paddingHorizontal: 32, borderRadius: 26, backgroundColor: T.primary, flexDirection: 'row', alignItems: 'center', gap: 10, opacity: loading ? 0.7 : 1, shadowColor: T.accent, shadowOpacity: T.dark ? 0.4 : 0.28, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } }}>
             <LStar w={24} color={T.onPrimary} />
             <Text style={[ty.headline, { color: T.onPrimary }]}>{loading ? 'Подбираем…' : err ? 'Ещё раз' : 'Запустить'}</Text>
@@ -572,8 +573,8 @@ function Attract({ openFull, onReset, active = true }: { openFull: () => void; o
               {hint && <SwipeHint />}
             </View>
           </GestureDetector>
-          {/* фильтры и ИИ-диджей — под стопкой, над капсулой управления */}
-          <View style={{ marginTop: 12, marginBottom: 12, flexDirection: 'row', gap: 8 }}><CfgButton cfg={cfg} onPress={() => setSheet(true)} /><AiBtn /></View>
+          {/* фильтры — под стопкой, над капсулой управления */}
+          <View style={{ marginTop: 12, marginBottom: 12, flexDirection: 'row', gap: 8 }}><CfgButton cfg={cfg} onPress={() => setSheet(true)} /></View>
           {/* место под капсулу управления — она стоит там же, где мини-плеер на главной */}
           <View style={{ height: BAR_SPACE }} />
         </Animated.View>
@@ -586,7 +587,7 @@ function Attract({ openFull, onReset, active = true }: { openFull: () => void; o
 // ================= Настройки потока (шторка снизу) =================
 // Каждое нажатие применяется сразу (без «Сохранить»): стопка тут же перестраивается под настройки.
 function PulseSheet({ cfg, onApply, onClose }: { cfg: pulse.Cfg; onApply: (c: pulse.Cfg) => void; onClose: () => void }) {
-  const T: any = useT(); const ty = useTy(); const ins = useSafeAreaInsets(); const { height: H } = useWindowDimensions();
+  const T: any = useT(); const ty = useTy(); const ins = useSafeAreaInsets(); const { height: H } = useWin();
   const [c, setC] = useState(cfg); const y = useSharedValue(1);
   useEffect(() => { y.value = withTiming(0, { duration: 460, easing: SHEET }); }, []);
   const shut = useRef(false);
@@ -610,7 +611,7 @@ function PulseSheet({ cfg, onApply, onClose }: { cfg: pulse.Cfg; onApply: (c: pu
   );
   const isDef = JSON.stringify({ ...pulse.DEFAULT_CFG }) === JSON.stringify({ ...pulse.DEFAULT_CFG, ...c });
   return (
-    <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={close}>
+    <Modal transparent visible animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={close}>
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Animated.View style={[abs, dim]}><Pressable onPress={close} style={[abs, { backgroundColor: T.dark ? 'rgba(0,0,0,0.5)' : 'rgba(20,16,40,0.28)' }]} /></Animated.View>
       <GestureDetector gesture={pan}>
@@ -629,7 +630,7 @@ function PulseSheet({ cfg, onApply, onClose }: { cfg: pulse.Cfg; onApply: (c: pu
             {row('Годы', pulse.ERAS, c.era, 'era')}
             {row('Длина', pulse.LENS, c.len, 'len')}
             {row('Ненормативная лексика', pulse.CLEANS, c.clean, 'clean')}
-            <TasteRow />
+            {/* ИИ-подбор убран */}
           </ScrollView>
           <Press onPress={close} style={{ marginTop: 18, height: 52, borderRadius: 26, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={[ty.headline, { color: T.onPrimary }]}>Готово</Text>

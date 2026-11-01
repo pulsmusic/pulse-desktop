@@ -20,7 +20,7 @@ function Word({ text, a, b, time, size, ad }: { text: string; a: number; b: numb
   const w = useSharedValue(0);
   const st = useAnimatedStyle(() => {
     const d = Math.max(0.05, b - a); let p = (time.value - a) / d; p = p < 0 ? 0 : p > 1 ? 1 : p; p = p * p * (3 - 2 * p);
-    return { width: w.value * p };
+    return { width: w.value * p, opacity: p > 0.001 ? 1 : 0 };
   });
   const base = { fontFamily: SF, fontSize: size, lineHeight: size * 1.26, fontWeight: (ad ? '600' : '700') as any, letterSpacing: -0.3 };
   return (
@@ -44,7 +44,7 @@ function LineView({ l, next, cur, d, time, onPress, onLayout }: { l: Line; next?
   // прошлые — тусклые, следующие — чуть ярче прошлых и тише текущей, дальние — ещё тише
   const op = cur ? 1 : d < 0 ? (d === -1 ? 0.42 : 0.26) : d === 1 ? 0.5 : d === 2 ? 0.36 : 0.24;
   const size = FS;
-  if (!l.text) return <View onLayout={(e) => onLayout(e.nativeEvent.layout.y, e.nativeEvent.layout.height)} style={{ height: 30, justifyContent: 'center' }}><Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 20, letterSpacing: 6 }}>• • •</Text></View>;
+  if (!l.text) return <View onLayout={(e) => onLayout(e.nativeEvent.layout.y, e.nativeEvent.layout.height)} style={{ height: 24 }} />;
   return (
     <Pressable onPress={onPress} onLayout={(e) => onLayout(e.nativeEvent.layout.y, e.nativeEvent.layout.height)} style={{ marginBottom: 18 }}>
       {cur && wt ? (

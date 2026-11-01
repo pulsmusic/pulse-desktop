@@ -3,7 +3,6 @@ import { Alert, Keyboard, Linking, View, Text, ScrollView as RNScroll, TextInput
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedProps, useDerivedValue, withRepeat, withTiming, withSequence, withDelay, cancelAnimation, FadeIn, FadeOut, SlideInDown, SlideInRight, SlideOutRight, runOnJS, runOnUI, Easing, interpolate, interpolateColor, LinearTransition, useAnimatedScrollHandler, useAnimatedReaction, useAnimatedKeyboard } from 'react-native-reanimated';
@@ -16,7 +15,7 @@ api.warmHome();
 import { usePlayer, usePlaying, useProgress, dayKey } from './player';
 import type { DayStat } from './player';
 import { DARK, LIGHT, ACCENTS, SOLO, GRADIENTS, second, gradOf, blendHex } from './theme';
-import { Ic, Press, Glass, GlassCard, Cover, Skel, Card, AlbumCard, AlbumRow, MoreCard, Row, ArtistDot, NavBar, Logo, IconBtn, Btn, StatCard, Eq, PIcon, LIcon, StarShape, StarOutline, LStarIcon, LStar, Glow, Matte, Explicit, LogoPill, Marquee, PlayPause, HAS_SVG, SVGLIB, RadialFill, once, GlassBtn, AiIcon, hap, WaterLight, AMB, useAmbient, takeFullOrigin, AmbientDriver, useTy, useT, VisCtx, useVisible, useLater, rise, EASE_OUT, EASE_IO, SHEET } from './ui';
+import { Ic, Press, Glass, GlassCard, Cover, Skel, Card, AlbumCard, AlbumRow, MoreCard, Row, ArtistDot, NavBar, Logo, IconBtn, Btn, StatCard, Eq, PIcon, LIcon, StarShape, StarOutline, LStarIcon, LStar, Glow, Matte, Explicit, LogoPill, Marquee, PlayPause, HAS_SVG, SVGLIB, RadialFill, once, GlassBtn, AiIcon, hap, WaterLight, AMB, useAmbient, takeFullOrigin, AmbientDriver, useTy, useWin, BlurView, useT, VisCtx, useVisible, useLater, rise, EASE_OUT, EASE_IO, SHEET } from './ui';
 import type { Playlist } from './player';
 import { keepImage, dropImage } from './audioCache';
 import { PulseScreen, PulseFeeder, PulseLearner, PulseBar } from './PulseTab';
@@ -34,6 +33,7 @@ import * as M_spectrum from './spectrum'; import * as M_theme from './theme'; im
 import { LSTAR_PAD } from './logoData';
 import { QuizScreen, QuizCard, canQuiz } from './Quiz';
 import { LiveLyrics } from './LiveLyrics';
+import { ASkip, AShuffle, ARepeat, ALyrics, AQueue } from './AIcons';
 import * as M_water from './waterData';
 import * as M_ym from './yandex';
 import * as M_quiz from './Quiz'; import * as M_quizData from './quizData'; import * as M_ai from './ai';
@@ -140,7 +140,7 @@ function useAsync<T>(f: () => Promise<T>, d: any[]) {
 // Фон экранов: «свет сквозь воду» (общий WaterLight из ui.tsx) — под обложками и текстом, в каждом разделе,
 // в одной фазе на всех экранах: при переходах не перезапускается.
 function Bg({ plain }: { plain?: boolean }) {
-  const T: any = useT(); const { width: W, height: H } = useWindowDimensions();
+  const T: any = useT(); const { width: W, height: H } = useWin();
   if (plain) return <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: T.bgBase }]} />;
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: T.bgBase, overflow: 'hidden' }]}>
@@ -614,14 +614,6 @@ function Search({ open, auto }: any) {
         <View>
           {/* сначала — текстовые подсказки (прошлые запросы и продолжения), потом артисты, треки и всё остальное */}
           {sugg.length > 0 && <View style={{ marginBottom: 6 }}>{sugg.map(suggRow)}</View>}
-          {/* запрос словами («музыка для пробежки») — можно отдать ИИ-диджею */}
-          {s.length >= 3 && (
-            <Press onPress={() => M_ai.openAi(s)} to={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingLeft: 16, paddingRight: 16, height: 52, marginBottom: 6 }}>
-              <View style={{ width: 26, height: 26, alignItems: 'center', justifyContent: 'center' }}><AiIcon size={26} /></View>
-              <Text numberOfLines={1} style={[ty.body, { flex: 1, color: T.ink }]}><Text style={{ color: T.accentText, fontWeight: '600' }}>Спросить ИИ: </Text>«{s}»</Text>
-              <Ionicons name="chevron-forward" size={17} color={T.muted} />
-            </Press>
-          )}
           {!R && !local.length && !myLists.length ? (
             err ? <Hint center>Не удалось получить результаты. Проверьте интернет.</Hint> : busy ? <ActivityIndicator style={{ marginTop: 30 }} /> : null
           ) : nothing ? <Hint center>{`Ничего не нашлось по запросу «${s}»`}</Hint> : (
@@ -738,7 +730,7 @@ function PlCover({ pl, size, r = 22, fav, recent }: { pl?: Playlist; size: numbe
 const newListName = (n: number) => (n ? `Новый плейлист ${n + 1}` : 'Новый плейлист');
 
 function Library({ open }: any) {
-  const P = usePlayer(); const T: any = useT(); const ty = useTy(); const { width: W } = useWindowDimensions();
+  const P = usePlayer(); const T: any = useT(); const ty = useTy(); const { width: W } = useWin();
   const cw = Math.floor((W - 32 - 16) / 2);
   // двойное нажатие на «Новый плейлист» создавало два плейлиста
   const create = () => once(() => { hap('success'); const id = P.createList(newListName(P.lists.length)); open({ k: 'playlist', id, fresh: true }); });
@@ -1247,10 +1239,18 @@ function HeroLayer({ children, onBack }: any) {
   const [back, setBack] = useState<any>(null); const heroEnd = useSharedValue(0);
   useEffect(() => { heroEnd.value = back ? back.end : 0; }, [back?.end]);
   const setOnDark = useCallback((v: boolean) => { setOD((p) => (p === v ? p : v)); od.value = withTiming(v ? 1 : 0, { duration: 350 }); }, []);
-  const ctx = useMemo(() => ({ sy, od, onDark, setOnDark, setFly, flyD, setBack, heroEnd }), [onDark]);
+  // место аватара считаем относительно самого слоя (а не окна): на Android окно начинается под строкой
+  // состояния, и аватар раньше рисовался выше своего места на её высоту
+  const rootRef = useRef<any>(null);
+  const at = useCallback((ref: any, cb: (yc: number) => void) => setTimeout(() => {
+    const a = ref.current, b = rootRef.current; if (!a || !b) return;
+    a.measure((_x: number, _y: number, _w: number, h: number, _px: number, py: number) => { if (!h) return;
+      b.measure((_x2: number, _y2: number, _w2: number, _h2: number, _px2: number, py2: number) => cb(py - py2 + h / 2 + sy.value)); });
+  }, 60), []);
+  const ctx = useMemo(() => ({ sy, od, onDark, setOnDark, setFly, flyD, setBack, heroEnd, at }), [onDark]);
   return (
     <HeroCtx.Provider value={ctx}>
-      <View style={{ flex: 1 }}><Bg plain />{back && <HeroLayerBg b={back} sy={sy} />}<FadeTop animP={edgeP}>{children}</FadeTop><HeroTop onBack={onBack} />{fly && <ArtistFly f={fly} />}</View>
+      <View ref={rootRef} collapsable={false} style={{ flex: 1 }}><Bg plain />{back && <HeroLayerBg b={back} sy={sy} />}<FadeTop animP={edgeP}>{children}</FadeTop><HeroTop onBack={onBack} />{fly && <ArtistFly f={fly} />}</View>
     </HeroCtx.Provider>
   );
 }
@@ -1271,7 +1271,7 @@ function HeroLayerBg({ b, sy }: { b: { u: string; end: number; onDark: boolean }
 // (Сам аватар в странице — пустое место того же размера, а рисуется он здесь, чтобы проходить над шапкой.)
 type FlyInfo = { name?: string; src?: string; letter?: string; ring?: string; ring2?: string; ring3?: string; badge?: boolean; fallback?: string; size: number; yc: number };
 function ArtistFly({ f }: { f: FlyInfo }) {
-  const T = useT(); const H = useContext(HeroCtx); const { width: W } = useWindowDimensions(); const padT = useTopPad();
+  const T = useT(); const H = useContext(HeroCtx); const { width: W } = useWin(); const padT = useTopPad();
   const [u, setU] = useState('');
   useEffect(() => { setU(''); if (f.src || !f.name) return; let ok = true; api.artistPhoto(f.name).then((x) => ok && setU(x)); return () => { ok = false; }; }, [f.name, f.src]);
   const src = f.src || u || f.fallback;
@@ -1419,7 +1419,7 @@ function Album({ id, open }: any) {
 // в светлой — в белый с тёмным текстом, в тёмной — в чёрный с белым. Сверху на фото — звезда логотипа и «Об исполнителе».
 // Фото — Deezer (официальное фото артиста; если его нет — обложка из каталога), текст, слушатели и жанры — Last.fm.
 function AboutArtist({ name, photo, fallback, genre, first, fans }: { name: string; photo?: string; fallback?: string; genre?: string; first?: string; fans: number }) {
-  const T: any = useT(); const ty = useTy(); const { width: W } = useWindowDimensions();
+  const T: any = useT(); const ty = useTy(); const { width: W } = useWin();
   const [ab, setAb] = useState<api.About | null>(null); const [more, setMore] = useState(false);
   useEffect(() => { let ok = true; setAb(null); api.artistAbout(name).then((x) => ok && setAb(x)); return () => { ok = false; }; }, [name]);
   const src = photo || (fallback ? api.hiArt(fallback) : '');
@@ -1514,7 +1514,7 @@ function StoryCard({ kind, artist, name }: { kind: 'album' | 'track'; artist?: s
 }
 // Шторка «История трека» в большом плеере. Нет истории у трека — показываем историю его альбома (с пометкой).
 function StorySheet({ t, onClose }: { t: Track; onClose: () => void }) {
-  const T: any = useT(); const ty = useTy(); const ins = useSafeAreaInsets(); const { height: H } = useWindowDimensions();
+  const T: any = useT(); const ty = useTy(); const ins = useSafeAreaInsets(); const { height: H } = useWin();
   const tr = useStory('track', t.artist, t.title); const al = useStory('album', t.artist, tr && !tr.text ? t.album : undefined);
   const st = tr?.text ? tr : al?.text ? al : null; const loading = tr === undefined || (!tr?.text && !!t.album && al === undefined);
   const y = useSharedValue(1);
@@ -1622,7 +1622,7 @@ function Donut({ share, color, track }: { share: number; color: string; track: s
   );
 }
 function StatsScreen({ open }: any) {
-  const P = usePlayer(); const T: any = useT(); const ty = useTy(); const { width: W } = useWindowDimensions();
+  const P = usePlayer(); const T: any = useT(); const ty = useTy(); const { width: W } = useWin();
   const [per, setPer] = useState<Per>('w');
   const st = useMemo(() => computeStats(P.stats || {}, per), [per]);
   const [photo, setPhoto] = useState('');
@@ -1746,7 +1746,7 @@ function Artist({ id, name, open }: any) {
         <View style={{ alignItems: 'center', marginTop: 8, paddingHorizontal: 16 }}>
           {/* сам аватар рисуется поверх шапки (ArtistFly) — при прокрутке он уходит в «остров» */}
           <View ref={avRef} collapsable={false} style={{ width: 176, height: 176 }}
-            onLayout={() => setTimeout(() => avRef.current?.measureInWindow((x, y, w, h) => { if (h) HC?.setFly({ name: nm, fallback: list[0]?.cover, size: 176, yc: y + h / 2 + (HC?.sy.value || 0) }); }), 60)} />
+            onLayout={() => HC?.at(avRef, (yc: number) => HC?.setFly({ name: nm, fallback: list[0]?.cover, size: 176, yc }))} />
           <Animated.View style={[{ alignItems: 'center' }, headSt]}>
           <Text numberOfLines={2} style={[ty.largeTitle, { textAlign: 'center', marginTop: 16, color: dk ? '#fff' : T.ink }]}>{nm}</Text>
           {!!r.v.info?.primaryGenreName && <Text style={[ty.footnote, { marginTop: 4, color: dk ? 'rgba(255,255,255,0.7)' : T.ink3 }]}>{api.genreRu(r.v.info.primaryGenreName)}</Text>}
@@ -1893,7 +1893,7 @@ function ProfileScreen({ open, onTheme, onPulse }: any) {
   const photo: string | undefined = P.profile.photo || undefined;
   const HC = useContext(HeroCtx); const avRef = useRef<View>(null);
   const letter = ((P.profile.name || '?')[0] || '?').toUpperCase();
-  const reg = () => setTimeout(() => avRef.current?.measureInWindow((x, y, w, h) => { if (h) HC?.setFly({ src: photo, letter, ring: T.accent, ring2: (T as any).duo ? (T as any).accent2 : undefined, ring3: (T as any).tri ? (T as any).accent3 : undefined, badge: true, size: 176, yc: y + h / 2 + (HC?.sy.value || 0) }); }), 60);
+  const reg = () => HC?.at(avRef, (yc: number) => HC?.setFly({ src: photo, letter, ring: T.accent, ring2: (T as any).duo ? (T as any).accent2 : undefined, ring3: (T as any).tri ? (T as any).accent3 : undefined, badge: true, size: 176, yc }));
   useEffect(() => { reg(); }, [photo, letter, T.accent, T.bgBase]);
   useEffect(() => () => HC?.setFly(null), []);
   const tone = useHeroTone(photo); const dk = tone.onDark;
@@ -1919,11 +1919,11 @@ function ProfileScreen({ open, onTheme, onPulse }: any) {
   const accName = P.black ? 'чёрная тема' : (ACCENTS.find((a) => a.key === P.accent) || ACCENTS[0]).name;
   const swRef = useRef<View>(null); const [swVal, setSwVal] = useState<boolean | null>(null);
   useEffect(() => { setSwVal(null); }, [T.dark]);
-  const flipTheme = (v: boolean) => { setSwVal(v); swRef.current?.measureInWindow((x, y, w, h) => onTheme?.(x + w / 2, y + h / 2)); };
+  const flipTheme = (v: boolean) => { setSwVal(v); swRef.current?.measure((_a, _b, w, h, x, y) => onTheme?.(x + w / 2, y + h / 2)); };
   const bkRef = useRef<View>(null); const [bkVal, setBkVal] = useState<boolean | null>(null);
   useEffect(() => { setBkVal(null); }, [P.black]);
   useEffect(() => { setSwVal(null); }, [P.dark]);
-  const flipBlack = (v: boolean) => { setBkVal(v); bkRef.current?.measureInWindow((x, y, w, h) => onTheme?.(x + w / 2, y + h / 2, 'black', v)); };
+  const flipBlack = (v: boolean) => { setBkVal(v); bkRef.current?.measure((_a, _b, w, h, x, y) => onTheme?.(x + w / 2, y + h / 2, 'black', v)); };
   const stats: [string, string][] = [[st.sec ? fmtTime(st.sec) : '0 мин', 'в «Пульсе»'], [String(nTracks), plural(nTracks, ['трек', 'трека', 'треков']).replace(/^\d+ /, '')], [String(P.favs.length), 'в любимом']];
   const ink = dk ? '#fff' : T.ink, ink3 = dk ? 'rgba(255,255,255,0.7)' : T.ink3;
   return (
@@ -1996,7 +1996,6 @@ function ProfileScreen({ open, onTheme, onPulse }: any) {
         <Group title="Воспроизведение">
           <SetRow icon="infinite" title="Автопродолжение" sub="Похожие треки после альбома или плейлиста"
             right={<Switch value={P.auto} onValueChange={P.setAuto} trackColor={{ true: T.accent, false: T.line }} thumbColor="#fff" />} />
-          <SetRow icon="sparkles-outline" title="ИИ-диджей" sub="Трек или плейлист по вашему запросу" onPress={() => open({ k: 'ai' })} />
           {!!api.YB && <SetRow icon="musical-note-outline" title="Яндекс Музыка" sub="Вход для полных треков (своя подписка Плюс)" onPress={() => open({ k: 'ym' })} />}
           <SetRow icon="eye-off-outline" title="Скрытые в «Моём пульсе»" value={bannedN ? String(bannedN) : 'нет'} onPress={() => open({ k: 'banned' })} />
         </Group>
@@ -2041,7 +2040,7 @@ function ColorSheet({ onClose }: { onClose: () => void }) {
     .onEnd((e) => { if (e.translationY > 110 || e.velocityY > 800) runOnJS(close)(); else y.value = withTiming(0, { duration: 300, easing: SHEET }); });
   const abs = StyleSheet.absoluteFill;
   return (
-    <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={close}>
+    <Modal transparent visible animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={close}>
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Animated.View style={[abs, dim]}><Pressable onPress={close} style={[abs, { backgroundColor: T.dark ? 'rgba(0,0,0,0.5)' : 'rgba(20,16,40,0.28)' }]} /></Animated.View>
       <GestureDetector gesture={pan}>
@@ -2100,7 +2099,7 @@ function ColorSheet({ onClose }: { onClose: () => void }) {
 
 // ---------- Смена темы: от переключателя расходится круг новой темы с розовой кромкой (как в промо), затем мягко растворяется ----------
 function ThemeWipe({ w, onCovered, onDone }: { w: { x: number; y: number; color: string; k: number }; onCovered: () => void; onDone: () => void }) {
-  const { width: W, height: H } = useWindowDimensions(); const T: any = useT();
+  const { width: W, height: H } = useWin(); const T: any = useT();
   const r = useSharedValue(0); const o = useSharedValue(1);
   const Rr = Math.hypot(Math.max(w.x, W - w.x), Math.max(w.y, H - w.y)) + 30;
   // Круг закрыл экран → меняем тему. Растворять круг начинаем только ПОСЛЕ того, как приложение реально
@@ -2304,10 +2303,10 @@ const titleFont = (s: string, w: number) => {
 const artistFont = (s: string, w: number) => Math.max(15, Math.min(22, Math.floor(w / (Math.max(1, s.length) * 0.5))));
 
 function Full({ onClose, onClosing, open, bgP }: any) {
-  const P = usePlayer(); const playing = usePlaying(); const ins = useSafeAreaInsets(); const { width: W, height: H } = useWindowDimensions(); const t = P.cur; const addTo = useContext(AddCtx);
+  const P = usePlayer(); const playing = usePlaying(); const ins = useSafeAreaInsets(); const { width: W, height: H } = useWin(); const t = P.cur; const addTo = useContext(AddCtx);
   const [showQ, setShowQ0] = useState(false); const [story, setStory] = useState(false);
   // живой текст: обложка уменьшается (как в режиме очереди), а текст занимает середину плеера
-  const [showL, setShowL0] = useState(false);
+  const [showL, setShowL0] = useState(false); const [goP, setGoP] = useState(0); const [goN, setGoN] = useState(0);
   const setShowQ = (v: any) => { setShowL0(false); setShowQ0(v); }; const setShowL = (v: any) => { setShowQ0(false); setShowL0(v); };
   // pr: 1 — плеер раскрыт, 0 — он превратился в капсулу мини-плеера. qm: 1 — режим очереди (обложка уменьшается)
   const pr = useSharedValue(0); const qm = useSharedValue(0); const sc = useSharedValue(playing ? 1 : 0.94);
@@ -2439,15 +2438,15 @@ function Full({ onClose, onClosing, open, bgP }: any) {
   const Prog = <ProgBlock cover={t.cover} seek={P.seek} />;
   const Controls = (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
-      <Press onPress={P.toggleShuffle} hap="select" to={0.88} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><LIcon n="shuffle" s={22} c={P.shuffle ? (P.T as any).accentGlow : 'rgba(255,255,255,.75)'} /></Press>
-      <Press onPress={() => P.step(-1)} hap="light" to={0.86} style={{ width: 56, height: 56, alignItems: 'center', justifyContent: 'center' }}><PIcon n="prev" s={38} c={WH} /></Press>
+      <Press onPress={P.toggleShuffle} hap="select" to={0.88} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><AShuffle on={!!P.shuffle} s={22} c={P.shuffle ? (P.T as any).accentGlow : 'rgba(255,255,255,.75)'} /></Press>
+      <Press onPress={() => { setGoP((x) => x + 1); P.step(-1); }} hap="light" to={0.86} style={{ width: 56, height: 56, alignItems: 'center', justifyContent: 'center' }}><ASkip dir={-1} go={goP} s={38} c={WH} /></Press>
       {/* без круга — только значок, как остальные кнопки: чисто и минималистично */}
       <Press onPress={P.toggle} hap="medium" to={0.88} style={{ width: 78, height: 78, alignItems: 'center', justifyContent: 'center' }}>
         <PlayPause playing={playing} size={52} color={WH} />
       </Press>
-      <Press onPress={() => P.step(1)} hap="light" to={0.86} style={{ width: 56, height: 56, alignItems: 'center', justifyContent: 'center' }}><PIcon n="next" s={38} c={WH} /></Press>
+      <Press onPress={() => { setGoN((x) => x + 1); P.step(1); }} hap="light" to={0.86} style={{ width: 56, height: 56, alignItems: 'center', justifyContent: 'center' }}><ASkip dir={1} go={goN} s={38} c={WH} /></Press>
       <Press onPress={P.cycleRep} hap="select" to={0.88} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-        <View><LIcon n="repeat" s={22} c={P.rep ? (P.T as any).accentGlow : 'rgba(255,255,255,.75)'} />{P.rep === 2 && <Text style={{ position: 'absolute', top: -4, right: -6, fontSize: 10, fontWeight: '800', color: (P.T as any).accentGlow }}>1</Text>}</View>
+        {HAS_SVG ? <ARepeat mode={P.rep || 0} s={22} c={P.rep ? (P.T as any).accentGlow : 'rgba(255,255,255,.75)'} /> : <View><LIcon n="repeat" s={22} c={P.rep ? (P.T as any).accentGlow : 'rgba(255,255,255,.75)'} />{P.rep === 2 && <Text style={{ position: 'absolute', top: -4, right: -6, fontSize: 10, fontWeight: '800', color: (P.T as any).accentGlow }}>1</Text>}</View>}
       </Press>
     </View>
   );
@@ -2455,8 +2454,8 @@ function Full({ onClose, onClosing, open, bgP }: any) {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <LIcon n="volume-1" s={20} c="rgba(255,255,255,.7)" />
       <View style={{ flex: 1 }}><Bar value={P.volume} h0={4} onChange={P.previewVolume} onDone={P.setVolume} /></View>
-      <Press onPress={() => setShowL(!showL)} to={0.88} style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: showL ? 'rgba(255,255,255,.2)' : 'transparent' }}><Ionicons name="chatbox-ellipses-outline" size={20} color="rgba(255,255,255,.85)" /></Press>
-      <Press onPress={() => setShowQ(!showQ)} to={0.88} style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: showQ ? 'rgba(255,255,255,.2)' : 'transparent' }}><LIcon n="list" s={21} c={showQ ? WH : 'rgba(255,255,255,.7)'} /></Press>
+      <Press onPress={() => setShowL(!showL)} to={0.88} style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: showL ? 'rgba(255,255,255,.2)' : 'transparent' }}><ALyrics on={showL} s={21} c={showL ? WH : 'rgba(255,255,255,.75)'} /></Press>
+      <Press onPress={() => setShowQ(!showQ)} to={0.88} style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: showQ ? 'rgba(255,255,255,.2)' : 'transparent' }}><AQueue on={showQ} s={21} c={showQ ? WH : 'rgba(255,255,255,.7)'} /></Press>
     </View>
   );
   const Content = (
@@ -2602,7 +2601,7 @@ const PaneBody = React.memo(function PaneBody({ k, active, open, openFull }: { k
 // при жесте «назад» — возвращается вместе с пальцем. Только transform и прозрачность — почти бесплатно.
 const PAR = 0.28, PAR_DIM = 0.1;
 function TabPane({ active, covered, under, shift, children }: { active: boolean; covered?: boolean; under?: boolean; shift?: any; children: React.ReactNode }) {
-  const { width: SW } = useWindowDimensions();
+  const { width: SW } = useWin();
   const o = useSharedValue(active ? 1 : 0); const off = useSharedValue(active ? 0 : 1); const cov = useSharedValue(covered ? 1 : 0);
   useEffect(() => {
     // переход между вкладками: новая проявляется поверх прежней (240 мс), прежняя не гаснет одновременно с ней,
@@ -2633,7 +2632,7 @@ function TabPane({ active, covered, under, shift, children }: { active: boolean;
 // уезжает за край (не рисуется), а его состояние и прокрутка сохраняются.
 const PUSH = Easing.bezier(0.32, 0.72, 0, 1);   // мягкий «доезд» как у системных экранов iOS
 function StackScreen({ top, under, deep, drag, shift, leave, onGone, children }: { top: boolean; under?: boolean; deep?: boolean; drag: any; shift: any; leave: null | 'anim' | 'instant'; onGone: () => void; children: React.ReactNode }) {
-  const { width } = useWindowDimensions();
+  const { width } = useWin();
   const tx = useSharedValue(width);
   useEffect(() => { tx.value = withTiming(0, { duration: 460, easing: PUSH }); }, []);
   // верхний экран сообщает, насколько он закрыл нижний (0…1) — по этому нижний делает параллакс
@@ -2678,7 +2677,7 @@ const StackBody = React.memo(function StackBody({ s, open, back, onTheme, onPuls
 
 // Нижняя навигация как в промо: стеклянная капсула, активная вкладка — розовая «пилюля», которая плавно переезжает
 function TabDock({ tab, onTab }: { tab: string; onTab: (k: any) => void }) {
-  const T = useT(); const ty = useTy(); const { width } = useWindowDimensions();
+  const T = useT(); const ty = useTy(); const { width } = useWin();
   // минималистичные иконки одного семейства: контур — неактивная, заливка — активная
   // контур — неактивная, заливка — активная. Домик — цельный силуэт (крыша и стены одной фигурой)
   // «Пульс» — фирменная звезда: контур, когда вкладка не выбрана, и залитая — когда выбрана
@@ -2731,7 +2730,7 @@ function StaleFiles({ files }: { files: string[] }) {
 }
 function ShellMain() {
   useUpdateNag();
-  const P = usePlayer(); const T = useT(); const ty = useTy(); const ins = useSafeAreaInsets(); const { width } = useWindowDimensions();
+  const P = usePlayer(); const T = useT(); const ty = useTy(); const ins = useSafeAreaInsets(); const { width } = useWin();
   const padT = useTopPad(); const [addFor, setAddFor] = useState<Track | null>(null); const [dir, setDir] = useState(1);
   const bgP = useSharedValue(0);   // насколько раскрыт большой плеер (0…1) — приложение под ним уходит вглубь
   const appSt = useAnimatedStyle(() => ({ borderRadius: 44 * Math.min(1, bgP.value * 4), transform: [{ scale: 1 - 0.07 * bgP.value }, { translateY: 10 * bgP.value }] }));
