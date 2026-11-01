@@ -39,6 +39,16 @@ jobs:
               lic = re.findall(r"license:\s*(\S+)", open(rd).read()) if os.path.exists(rd) else []
               print("модель", repo, "лицензия:", lic)
               if os.path.exists(rd): os.remove(rd)
+          import json
+          for m in ["yolos-tiny", "modnet"]:
+              pc = f"pack/models/{m}/preprocessor_config.json"; c = json.load(open(pc)); print(m, "было:", json.dumps(c))
+              # детектору хватает 320 точек (ищем крупного человека) — втрое быстрее; вырезанию — 384
+              side = 320 if m == "yolos-tiny" else 384
+              if isinstance(c.get("size"), dict):
+                  if "shortest_edge" in c["size"]: c["size"] = {"shortest_edge": side, "longest_edge": side * 2}
+                  elif "height" in c["size"]: c["size"] = {"height": side, "width": side}
+              elif isinstance(c.get("size"), int): c["size"] = side
+              json.dump(c, open(pc, "w")); print(m, "стало:", json.dumps(c))
           os.makedirs("pack/test/img", exist_ok=True)
           fs = [f for f in list_repo_files("Xenova/transformers.js-docs", repo_type="dataset") if re.search(r"\.(jpe?g|png)$", f, re.I)]
           print("фото в наборе:", fs)
