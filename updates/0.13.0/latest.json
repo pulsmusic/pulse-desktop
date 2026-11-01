@@ -1,0 +1,15 @@
+{
+  "version": "0.13.0",
+  "date": "2026-11-01",
+  "notes": [
+    "Живой текст: подсветка по словам теперь появляется автоматически и у песен, где её раньше не было",
+    "Подсветка слов стала точнее",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.13.0/pulse-app-0.13.0.zip",
+  "sha256": "cb867dde0ce7ec149433ae703fb1f55d64f4403e3e59c8ad01e23aa31913a8c7",
+  "size": 441182,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
