@@ -1,0 +1,14 @@
+{
+  "version": "0.13.6",
+  "date": "2026-11-01",
+  "notes": [
+    "Обложка в плеере на паузе больше не смещается",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.13.6/pulse-app-0.13.6.zip",
+  "sha256": "d6b385f7daffb4054eebac691fac2073b28b12a02e4d9de5685ffae14cde8e79",
+  "size": 462727,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
