@@ -1,0 +1,15 @@
+{
+  "version": "0.12.2",
+  "date": "2026-11-01",
+  "notes": [
+    "Улучшен живой текст: мягкое свечение и более плавная подсветка",
+    "Подпевки в скобках показываются отдельной строкой",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.12.2/pulse-app-0.12.2.zip",
+  "sha256": "f4e765e400e1a113dfe74706eba6856e6a35ee81d2c500aa2a370a8056fca8fc",
+  "size": 430307,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
