@@ -1,0 +1,14 @@
+{
+  "version": "0.11.2",
+  "date": "2026-11-01",
+  "notes": [
+    "Обновлено оформление установщика",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.11.2/pulse-app-0.11.2.zip",
+  "sha256": "39b9bfa0a66f2dc9edfd65d8c1b406486be7c6a9a690dc68a7be1e3ea89e310c",
+  "size": 421466,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}

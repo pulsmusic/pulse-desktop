@@ -113,7 +113,7 @@ h1 { font-family:'Segoe UI Variable Display','Segoe UI',system-ui,sans-serif; fo
 <nav class="side">
   <div class="logo"><i class="l"></i><i class="s"></i><sup>альфа</sup></div>
   <div class="steps" id="steps"><div class="pill" id="pill"></div></div>
-  <div class="quote"><i></i><b>Музыка — это не только то, что мы слушаем</b><span>Альфа-билд 0.9.5 · сборка 2610.26</span></div>
+  <div class="quote"><i></i><b>Музыка — это не только то, что мы слушаем</b><span id="build">Альфа-билд</span></div>
 </nav>
 <main class="main" id="main"></main>
 <script>
@@ -274,6 +274,7 @@ addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passi
 try { if (Math.abs(outerWidth - 960) > 80 || Math.abs(outerHeight - 660) > 80) { resizeTo(960, 660); moveTo((screen.availWidth - 960) / 2, (screen.availHeight - 660) / 2); } } catch (e) {}
 (async () => {
   try { info = await api('/api/info'); } catch (e) {}
+  if (info.version) document.getElementById('build').textContent = 'Альфа-билд ' + info.version;
   opts.dir = info.dir;
   if (info.embedded) LIST[1] = 'Electron — основа программы';
   welcome();
