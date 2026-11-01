@@ -74,6 +74,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           N=$(cat VERSION | tr -d '[:space:]')
+          (cd pack/test && zip -q ../../ai-test-song.zip song.wav song.json)
           rm -rf pack/test
           (cd pack && zip -qr ../pulse-ai-$N.zip .)
           python3 - "$N" <<'PY'
@@ -85,5 +86,5 @@ jobs:
           print(open("ai-pack.json").read())
           PY
           gh release delete "ai-pack-$N" -R "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "ai-pack-$N" "pulse-ai-$N.zip" ai-pack.json -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+          gh release create "ai-pack-$N" "pulse-ai-$N.zip" ai-pack.json ai-test-song.zip -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Пакет ИИ $N (служебный)" --notes "Служебный пакет для живого текста. Скачивается программой автоматически." --prerelease --latest=false
