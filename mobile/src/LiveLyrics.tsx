@@ -27,7 +27,7 @@ function Word({ text, a, b, time, size, ad }: { text: string; a: number; b: numb
     <View onLayout={(e) => { w.value = e.nativeEvent.layout.width; }} style={{ marginRight: size * 0.26 }}>
       <Text style={[base, { color: 'rgba(255,255,255,0.36)' }]}>{text}</Text>
       <Animated.View style={[{ position: 'absolute', left: 0, top: 0, bottom: 0, overflow: 'hidden' }, st]}>
-        <Text numberOfLines={1} style={[base, { color: '#fff', textShadowColor: 'rgba(255,255,255,0.45)', textShadowRadius: 9 }]}>{text}</Text>
+        <Text numberOfLines={1} style={[base, { color: '#fff' }]}>{text}</Text>
       </Animated.View>
     </View>
   );

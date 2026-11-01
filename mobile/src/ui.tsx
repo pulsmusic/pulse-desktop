@@ -3,7 +3,11 @@ import { Pressable, Image, View, Text, StyleSheet, Platform, AppState, useWindow
 import { BlurView as XBlur } from 'expo-blur';
 // Матовое стекло. На Android обычный BlurView не размывает (только полупрозрачная заливка) — включаем
 // настоящее размытие (как на iPhone); на iOS всё как было.
-export const BlurView = (p: any) => <XBlur {...p} {...(Platform.OS === 'android' ? { experimentalBlurMethod: 'dimezisBlurView', blurReductionFactor: 4 } : null)} />;
+// На Android настоящее размытие дорогое (каждый кадр заново размывается весь экран под стеклом), поэтому оно
+// включено только у постоянных элементов — меню, мини-плеера и верхней кромки (live). Остальное стекло на Android —
+// плотная полупрозрачная заливка без размытия: выглядит так же спокойно, но не грузит телефон.
+const AND = Platform.OS === 'android';
+export const BlurView = ({ live, ...p }: any) => (AND ? (live ? <XBlur {...p} experimentalBlurMethod="dimezisBlurView" blurReductionFactor={8} /> : null) : <XBlur {...p} />);
 import { LinearGradient } from 'expo-linear-gradient';
 import { LOGO_URI, LOGO_RATIO, STAR_URI, IMP_URI, IMP_RATIO, IMP_STAR_URI, STAR4_URI, STAR_HD_URI, STAR_OUT_URI, GLOW_URI, LSTAR_URI, LSTAR_RATIO, LSTAR_PAD, LSTAR_ICON_URI, LSTAR_ICON_OUT_URI, LSTAR_ICON_PAD, LSTAR_HD_URI, LSTAR_HD_PAD, LSTAR_LINE_URI, STAR_GLOW_URI, STAR_GLOW_PAD, STAR_SOFT_URI, STAR_SOFT_PAD, IMP_STAR_GLOW_URI, IMP_STAR_GLOW_PAD, IMP_STAR_SOFT_URI, IMP_STAR_SOFT_PAD, LSTAR_GLOW_URI, LSTAR_GLOW_PAD, STAR_FADE_URI, IMP_STAR_FADE_URI, LSTAR_FADE_URI, LSTAR_HD_FADE_URI } from './logoData';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -153,15 +157,15 @@ export function Press({ onPress, onLongPress, style, children, hitSlop, to = 0.9
 // пересчитывает её каждый кадр, пока под стеклом что-то движется (свет, звёзды, прокрутка) — это грело телефон
 // и роняло частоту со 120 до 60 Гц. Стекло читается за счёт размытия и тонкой обводки.
 const GLASS_OVER = { position: 'absolute' as const, left: -14, right: -14, top: -14, bottom: -14 };
-export const Matte = ({ style, children, radius = 22, strong, shadow = false, pointerEvents }: any) => {
+export const Matte = ({ style, children, radius = 22, strong, shadow = false, pointerEvents, live }: any) => {
   const T: any = useT();
   return (
     <View pointerEvents={pointerEvents} style={[{ borderRadius: radius }, shadow && { shadowColor: T.dark ? '#000' : '#2a1e50', shadowOpacity: T.dark ? 0.45 : 0.12, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } }, style]}>
       <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden', borderWidth: 1, borderColor: T.matteStroke }]}>
         {/* размытие чуть больше самой кнопки и обрезано по скруглению: у края размытия iOS подмешивает фон
             снаружи — получалось светлое кольцо внутри (будто кнопка залита не до края). Теперь край ровный */}
-        <BlurView intensity={T.blur} tint={T.tint} style={GLASS_OVER} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: strong ? T.matteStrong : T.matte }]} />
+        <BlurView live={live} intensity={T.blur} tint={T.tint} style={GLASS_OVER} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: strong || (AND && !live) ? T.matteStrong : T.matte }]} />
       </View>
       {children}
     </View>
@@ -187,7 +191,7 @@ export const GlassCard = ({ style, children, radius = 22, tone }: any) => {
     <View style={[{ borderRadius: radius }, style]}>
       <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden', borderWidth: 1, borderColor: dk ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.55)' }]}>
         <BlurView intensity={T0.blur} tint={dk ? 'dark' : 'light'} style={GLASS_OVER} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: dk ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.36)' }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: AND ? (dk ? 'rgba(30,30,36,0.55)' : 'rgba(255,255,255,0.6)') : dk ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.36)' }]} />
       </View>
       {children}
     </View>
@@ -767,6 +771,8 @@ let ambN = 0, ambActive = true; const ambSubs = new Set<() => void>();
 const ambSync = () => ambSubs.forEach((f) => f());
 try { AppState.addEventListener('change', (st) => { ambActive = st === 'active'; ambSync(); }); } catch {}
 const AMB_ACC = makeMutable(0);
+// на Android фон обновляется 15 раз в секунду (на iPhone — 30): свет медленный, разницы не видно, а стекло размывается вдвое реже
+const AMB_STEP = Platform.OS === 'android' ? 66 : 33;
 const AMB_SPD = makeMutable(1);   // скорость фона: 1 — обычная, 0 — замер (плавный переход между ними)
 export function AmbientDriver() {
   const [on, setOn] = useState(false); const aw = useAwake();
@@ -775,7 +781,7 @@ export function AmbientDriver() {
     'worklet';
     const dt = Math.min(100, fi.timeSincePreviousFrame ?? 16) * AMB_SPD.value;
     AMB_ACC.value += dt;
-    if (AMB_ACC.value >= 33) { AMB.value = AMB.value + AMB_ACC.value / 1000; AMB_ACC.value = 0; }
+    if (AMB_ACC.value >= AMB_STEP) { AMB.value = AMB.value + AMB_ACC.value / 1000; AMB_ACC.value = 0; }
   }, false);
   useEffect(() => {
     if (!on) { fc.setActive(false); return; }

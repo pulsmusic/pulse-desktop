@@ -110,7 +110,7 @@ function SoftEdge({ height, strong }: { height: number; strong?: boolean }) {
   return (
     <MaskedView pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height, zIndex: 2 }}
       maskElement={<LinearGradient colors={['#000', '#000', 'rgba(0,0,0,0)']} locations={[0, 0.5, 1]} style={{ flex: 1 }} />}>
-      <BlurView intensity={strong ? 40 : T.dark ? 28 : 22} tint={T.tint} style={{ flex: 1 }} />
+      <BlurView live intensity={strong ? 40 : T.dark ? 28 : 22} tint={T.tint} style={{ flex: 1 }} />
     </MaskedView>
   );
 }
@@ -2690,7 +2690,7 @@ function TabDock({ tab, onTab }: { tab: string; onTab: (k: any) => void }) {
   const pill = useAnimatedStyle(() => ({ transform: [{ translateX: px.value * tw }] }), [tw]);
   const abs = StyleSheet.absoluteFill;
   return (
-    <Matte radius={TAB_H / 2} strong style={{ position: 'absolute', left: 16, right: 16, bottom: DOCK_B, height: TAB_H, zIndex: 30 }}>
+    <Matte live radius={TAB_H / 2} strong style={{ position: 'absolute', left: 16, right: 16, bottom: DOCK_B, height: TAB_H, zIndex: 30 }}>
       <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 6, top: 6, width: tw, height: TAB_H - 12, borderRadius: (TAB_H - 12) / 2, overflow: 'hidden', backgroundColor: (T as any).accentPill }, pill]}>
         {/* двухцветный вариант — пилюля переливается из первого цвета во второй */}
         {(T as any).duo && <LinearGradient colors={(T as any).tri ? [(T as any).accentPillA, (T as any).accentPillB, (T as any).accentPillC] : [(T as any).accentPillA, (T as any).accentPillB]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />}
@@ -2735,7 +2735,8 @@ function ShellMain() {
   const P = usePlayer(); const T = useT(); const ty = useTy(); const ins = useSafeAreaInsets(); const { width } = useWin();
   const padT = useTopPad(); const [addFor, setAddFor] = useState<Track | null>(null); const [dir, setDir] = useState(1);
   const bgP = useSharedValue(0);   // насколько раскрыт большой плеер (0…1) — приложение под ним уходит вглубь
-  const appSt = useAnimatedStyle(() => ({ borderRadius: 44 * Math.min(1, bgP.value * 4), transform: [{ scale: 1 - 0.07 * bgP.value }, { translateY: 10 * bgP.value }] }));
+  const deepV = useSharedValue(0);   // 1 — плеер раскрыт полностью: приложение под ним можно не рисовать (пока плеер не тянут вниз)
+  const appSt = useAnimatedStyle(() => ({ opacity: deepV.value && bgP.value > 0.995 ? 0 : 1, borderRadius: 44 * Math.min(1, bgP.value * 4), transform: [{ scale: 1 - 0.07 * bgP.value }, { translateY: 10 * bgP.value }] }));
   const dimSt = useAnimatedStyle(() => ({ opacity: 0.45 * bgP.value }));
   const [tab, setTab] = useState<'home' | 'pulse' | 'lib'>('home'); const [stack, setStack] = useState<any[]>([]); const [full, setFull] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -2817,6 +2818,11 @@ function ShellMain() {
   const onPulse = useCallback(() => goTab('pulse'), [goTab]);
   const n = stack.length;
   const pulseOn = useLater(tab === 'pulse' && n === 0);   // живая линия засыпает, когда поверх доехал другой экран
+  // когда полный плеер раскрылся, приложение под ним не рисуется вовсе (его всё равно не видно) — телефон не тратит
+  // силы на размытие меню и мини-плеера под плеером; при закрытии оно появляется сразу, до начала сжатия
+  const [deep, setDeep] = useState(false);
+  useEffect(() => { if (full && !closing) { const t = setTimeout(() => setDeep(true), 700); return () => clearTimeout(t); } setDeep(false); }, [full, closing]);
+  useEffect(() => { deepV.value = deep ? 1 : 0; }, [deep]);
   const appVis = useLater(!full, 700);                    // под раскрытым плеером украшающие анимации на паузе
 
   return (
@@ -2861,7 +2867,7 @@ function ShellMain() {
       {P.cur && !quizOn && !(tab === 'pulse' && P.src === 'pulse' && shown.length === 0) && (
         <GestureDetector gesture={miniG}>
           <Animated.View entering={rise(0, 14, 460)} exiting={FadeOut.duration(260).easing(EASE_IO)} style={{ position: 'absolute', left: 16, right: 16, bottom: DOCK_B + TAB_H + 8, height: MINI_H, zIndex: 31, elevation: 5, borderRadius: 30 }}>
-            <Matte radius={30} strong style={abs} />
+            <Matte live radius={30} strong style={abs} />
             <Pressable onPress={openFull} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 8, paddingRight: 6, borderRadius: 30, overflow: 'hidden' }}>
               <MiniArt u={api.smallArt(P.cur.cover)} />
               <View style={{ flex: 1, height: 40 }}>

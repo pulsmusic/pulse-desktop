@@ -69,7 +69,7 @@ function Active({ kind, color: c1, color2, color3, idle, size }: { kind: Kind; c
   const glow = useAnimatedStyle(() => ({ opacity: 0.45 * bump(t.value, 0.5, 1) }));
   const abs = { position: 'absolute' as const, left: 0, top: 0, width: size, height: size };
   const Base = <Animated.View pointerEvents="none" style={[abs, base]}><Static kind={kind} color={idle} size={size} /></Animated.View>;
-  const Halo = <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: -size * 0.5, top: -size * 0.5, width: size * 2, height: size * 2, alignItems: 'center', justifyContent: 'center' }, glow]}><Glow size={size * 2} color={c1} /></Animated.View>;
+  const Halo = null; const _halo = <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: -size * 0.5, top: -size * 0.5, width: size * 2, height: size * 2, alignItems: 'center', justifyContent: 'center' }, glow]}><Glow size={size * 2} color={c1} /></Animated.View>;
 
   if (kind === 'home') {
     const p = dash(L_HOME, 0, 0.58);
