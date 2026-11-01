@@ -1,0 +1,16 @@
+{
+  "version": "0.11.1",
+  "date": "2026-11-01",
+  "notes": [
+    "Повышена стабильность запуска на Windows 10 и Windows 11",
+    "Исправлена ошибка, из-за которой программа могла не открываться с ярлыка на рабочем столе",
+    "Если программа не смогла открыться, следующий запуск пройдёт в безопасном режиме",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.11.1/pulse-app-0.11.1.zip",
+  "sha256": "72a84f9944ed7868ca1fd17d4ee4726990edddb38091e615e8982b097447fb56",
+  "size": 421465,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}

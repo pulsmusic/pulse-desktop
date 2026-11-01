@@ -1,13 +1,14 @@
 # Выпуск обновления «Пульса» для Windows.
 # Срабатывает, когда в updates/ появляется новая версия (папка updates/<версия>/ с latest.json и pulse-app-<версия>.zip):
 # находит самую новую версию, для которой ещё нет релиза, проверяет файлы (версия, размер, SHA-256) и создаёт релиз v<версия>.
-# К релизу прикрепляются latest.json и пакет (их скачивает кнопка «Проверить обновления») и установщик — из папки версии,
-# если он там есть, иначе из прошлого релиза (чтобы ссылка …/releases/latest всегда вела к установщику).
+# К релизу прикрепляются latest.json и пакет (их скачивает кнопка «Проверить обновления») и установщик.
+# Установщик собирается здесь же из installer/ (Go) — с Electron с GitHub (проверка SHA-256) и файлами этой версии,
+# поэтому в нём всегда последняя версия программы. Не собрался — берётся из прошлого релиза.
 name: Выпуск обновления
 on:
   push:
     branches: [main]
-    paths: ['updates/**', '.github/workflows/release.yml']
+    paths: ['updates/**', 'installer/**', '.github/workflows/release.yml']
   workflow_dispatch:
 permissions:
   contents: write
@@ -42,6 +43,27 @@ jobs:
           assert m["size"] == len(z), "размер не совпадает"
           print("Файлы в порядке:", v, len(z), "байт")
           PY
+      - uses: actions/setup-go@v5
+        if: steps.ver.outputs.ver != ''
+        with:
+          go-version: '1.24.x'
+          cache: false
+      - name: Установщик
+        if: steps.ver.outputs.ver != ''
+        continue-on-error: true
+        run: |
+          set -e
+          VER="${{ steps.ver.outputs.ver }}"; DIR="$PWD/updates/$VER"
+          cd installer
+          mkdir -p electron app
+          EZ=electron/electron-v33.2.1-win32-x64.zip
+          curl -fsSL --retry 3 -o "$EZ" https://github.com/electron/electron/releases/download/v33.2.1/electron-v33.2.1-win32-x64.zip
+          echo "c325a6d905c67107e166267813ea2151ae7fd316c0a88de0081db0b9851a9946  $EZ" | sha256sum -c -
+          unzip -q "$DIR/pulse-app-$VER.zip" -d app
+          test -f app/main.js && test -f app/dist/index.html && test -f app/build/icon.png
+          sed -i "s/AppVersion      = \"[^\"]*\"/AppVersion      = \"$VER\"/" main.go
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -H windowsgui" -o ../Pulse-Desktop-Alpha-Setup.exe .
+          ls -la ../Pulse-Desktop-Alpha-Setup.exe
       - name: Релиз
         if: steps.ver.outputs.ver != ''
         env:
@@ -49,7 +71,9 @@ jobs:
         run: |
           VER="${{ steps.ver.outputs.ver }}"; DIR="updates/$VER"
           FILES=("$DIR/latest.json" "$DIR/pulse-app-$VER.zip")
-          if [ -f "$DIR/Pulse-Desktop-Alpha-Setup.exe" ]; then
+          if [ -f Pulse-Desktop-Alpha-Setup.exe ]; then
+            FILES+=(Pulse-Desktop-Alpha-Setup.exe)
+          elif [ -f "$DIR/Pulse-Desktop-Alpha-Setup.exe" ]; then
             FILES+=("$DIR/Pulse-Desktop-Alpha-Setup.exe")
           else
             PREV=$(gh release list -R "$GITHUB_REPOSITORY" --limit 30 --exclude-drafts --exclude-pre-releases --json tagName -q '.[0].tagName')
