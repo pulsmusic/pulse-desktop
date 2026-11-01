@@ -35,7 +35,12 @@ jobs:
           node ../mobile/merge-app-json.js app.json ../mobile/app.json ../mobile/VERSION
           npm install --no-audit --no-fund
           npx expo install expo-audio expo-blur expo-haptics react-native-reanimated react-native-worklets react-native-safe-area-context @react-native-async-storage/async-storage @expo/vector-icons expo-image-picker expo-linear-gradient react-native-gesture-handler expo-file-system expo-intent-launcher expo-splash-screen
-          npm ls expo react-native react react-native-reanimated expo-audio --depth=0 || true
+          npx expo install --fix || true
+          npm dedupe --no-audit --no-fund || true
+          npm ls --depth=0 || true
+          npm ls expo-modules-autolinking || true
+          npx expo-modules-autolinking resolve --platform android --json > autolink.json 2>/dev/null || true
+          node -e "const j=require('./autolink.json'); for (const m of j.modules||[]) console.log(m.packageName, m.packageVersion, JSON.stringify((m.projects||[]).map(p=>p.publication||null)))" || true
           cat app.json
       - name: Проверка типов (для журнала)
         run: cd app && (npx tsc --noEmit 2>&1 | head -80) || true
