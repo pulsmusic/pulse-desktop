@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedProps, useDerivedValue, withRepeat, withTiming, withSequence, withDelay, cancelAnimation, FadeIn, FadeOut, SlideInDown, SlideInRight, SlideOutRight, runOnJS, runOnUI, Easing, interpolate, interpolateColor, LinearTransition, useAnimatedScrollHandler, useAnimatedReaction, useAnimatedKeyboard } from 'react-native-reanimated';
 import * as api from './api';
 import * as upd from './updater';
+import { APP_VERSION } from './version';
 import type { Track } from './api';
 // чарт и новинки главной начинают грузиться сразу при запуске, ещё до первого кадра
 api.warmHome();
@@ -312,7 +313,7 @@ function Home({ open }: any) {
       <Strip title="Любимое" data={P.favs} empty="Нажмите на сердечко у любого трека" open={open} />
       <View style={{ alignItems: 'center', marginTop: 34 }}>
         <Glass radius={999} style={{ paddingHorizontal: 13, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#ffb020' }} /><Text style={[ty.caption, { color: T.ink }]}>пульс · альфа 0.1.64</Text>
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#ffb020' }} /><Text style={[ty.caption, { color: T.ink }]}>пульс · альфа {APP_VERSION}</Text>
         </Glass>
         <Text style={[ty.caption, { fontWeight: '400', textAlign: 'center', maxWidth: 290, marginTop: 10, lineHeight: 16 }]}>Приложение находится в разработке. Возможны баги, недоработки и внезапные изменения — мы уже над этим работаем. Спасибо, что вы с нами!</Text>
       </View>
@@ -2019,7 +2020,7 @@ function ProfileScreen({ open, onTheme, onPulse }: any) {
           <SetRow icon="person" title="Имя" value={P.profile.name} onPress={() => { setName(P.profile.name); setEdit(true); }} />
           <SetRow icon="image" title="Фото профиля" value={photo ? 'Изменить' : 'Добавить'} onPress={pick} />
         </Group>
-        <Text style={[ty.caption, { textAlign: 'center', marginTop: 24 }]}>пульс · альфа 0.1.64</Text>
+        <Text style={[ty.caption, { textAlign: 'center', marginTop: 24 }]}>пульс · альфа {APP_VERSION}</Text>
       </ScrollView>
       {colorOpen && <ColorSheet onClose={() => setColorOpen(false)} />}
     </>

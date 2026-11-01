@@ -14,12 +14,13 @@ export const tokenProblem = (t?: string | null) => (cleanToken(t) && cleanToken(
 const yandexHost = (u: string) => /^https:\/\/([a-z0-9-]+\.)*yandex\.(net|ru|com)\//i.test(u);
 
 class HttpErr extends Error { status: number; constructor(m: string, s: number) { super(m); this.status = s; } }
-async function raw(path: string, token: string, opt: { method?: string; form?: Record<string, string>; text?: boolean; ms?: number } = {}): Promise<any> {
+async function raw(path: string, token: string, opt: { method?: string; form?: Record<string, string>; json?: any; text?: boolean; ms?: number } = {}): Promise<any> {
   const url = path.startsWith('http') ? path : BASE + path;
   const h: Record<string, string> = { ...HEAD };
   if (token && yandexHost(url)) h.Authorization = 'OAuth ' + token;
   let body: string | undefined;
   if (opt.form) { h['Content-Type'] = 'application/x-www-form-urlencoded'; body = Object.entries(opt.form).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&'); }
+  if (opt.json) { h['Content-Type'] = 'application/json'; body = JSON.stringify(opt.json); }
   const c = new AbortController(); const tm = setTimeout(() => c.abort(), opt.ms || 12000);
   try {
     const r = await fetch(url, { method: opt.method || 'GET', headers: h, body, signal: c.signal });
@@ -167,6 +168,19 @@ async function stream(tid: number, tok: string) {
   const sign = md5(SIGN_SALT + path.slice(1) + s);
   return { url: 'https://' + host + '/get-mp3/' + sign + '/' + ts + path, preview: !!best.preview, bitrate: best.bitrateInKbps, codec: best.codec };
 }
+// «Моя волна» Яндекса — как в версии для Windows: фильтры «Моего пульса» становятся настройками волны,
+// after — последний трек очереди (Яндекс продолжает поток с него). Только со входом.
+let waveKey = '', waveStarted = false;
+async function wave(tok: string, mood: string, kind: string, lang: string, after: string) {
+  const t = cleanToken(tok); if (!t) return { results: [], need: 'token' };
+  const k = [t.slice(-6), mood, kind, lang].join('|');
+  if (k !== waveKey) {
+    try { await raw('/rotor/station/user:onyourwave/settings3', t, { method: 'POST', form: undefined, ms: 8000, json: { moodEnergy: mood, diversity: kind, language: lang, type: 'rotor' } } as any); waveKey = k; } catch {}
+  }
+  if (!waveStarted) { waveStarted = true; raw('/rotor/station/user:onyourwave/feedback', t, { method: 'POST', json: { type: 'radioStarted', from: 'mobile-radio-user-onyourwave', timestamp: new Date().toISOString() } } as any).catch(() => {}); }
+  const r = await ym('/rotor/station/user:onyourwave/tracks?settings2=true' + (after ? '&queue=' + encodeURIComponent(after) : ''), t, { ms: 10000 });
+  return { results: clean(((r && r.sequence) || []).map((x: any) => song(x.track))) };
+}
 async function health(tok: string) {
   try {
     const r = await ym('/search?text=' + encodeURIComponent('Кино') + '&type=track&page=0', tok);
@@ -186,6 +200,7 @@ export async function ymLocal(path: string, token: string): Promise<any> {
   const lim = (d: number, mx: number) => Math.min(mx, +q('limit') || d);
   let m: RegExpMatchArray | null;
   if (p === '/health') return health(token);
+  if (p === '/wave') return wave(token, q('mood') || 'all', q('kind') || 'default', q('lang') || 'any', q('after'));
   if (p === '/search') return { results: await search(q('term'), q('entity') || 'song', lim(30, 50), token) };
   if (p === '/match') return match(q('title'), q('artist'), token);
   if ((m = p.match(/^\/artist\/(\d+)\/songs$/))) return { results: await artistSongs(+m[1], lim(200, 300), token) };

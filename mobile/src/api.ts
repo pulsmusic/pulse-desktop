@@ -604,3 +604,12 @@ export const BUILD = 64;
 
 // проверка связи с Яндексом (экран «Яндекс Музыка»): и для своего сервера, и для режима без сервера
 export async function ymHealth(): Promise<any> { return yj('/health', 9000); }
+// «Моя волна» Яндекса для «Моего пульса» (нужен вход). cfg — фильтры приложения → настройки волны
+export async function wave(cfg: { mood: string; kind: string; lang?: string }, after = ''): Promise<Track[]> {
+  if (!YLOCAL || !(await ymToken())) return [];
+  const mood = ({ any: 'all', up: 'active', calm: 'calm', fun: 'fun', sad: 'sad' } as any)[cfg.mood] || 'all';
+  const kind = ({ mix: 'default', fav: 'favorite', new: 'discover', pop: 'popular' } as any)[cfg.kind] || 'default';
+  const lang = ({ any: 'any', ru: 'russian', world: 'not-russian' } as any)[cfg.lang || 'any'] || 'any';
+  const d = await yj(`/wave?mood=${mood}&kind=${kind}&lang=${lang}&after=${encodeURIComponent(after)}`, 12000).catch(() => null);
+  return L((d && d.results) || []);
+}

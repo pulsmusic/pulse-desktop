@@ -170,8 +170,21 @@ async function filterPool(cfg: Cfg): Promise<Track[]> {
   return out;
 }
 
+// последний трек, выданный волной, — с него Яндекс продолжает поток (без повторов)
+let waveAfter = '';
 export async function batch(c: Ctx, cfg: Cfg, used: Set<string>, n = 12): Promise<Track[]> {
   const less = await getLess(); const ban = new Set(less.keys); const tz = await getTaste();
+  // со входом в Яндекс — как на компьютере: «Моя волна» с фильтрами (несколько попыток, если фильтры строгие)
+  if (api.YLOCAL && (await api.ymToken())) {
+    const out: Track[] = []; const seen = new Set<string>(used);
+    for (let a = 0; a < 4 && out.length < n; a++) {
+      const w = await within(api.wave(cfg, waveAfter), 12000, [] as Track[]);
+      if (!w.length) break;
+      waveAfter = String((w[w.length - 1] as any).url || '').replace(/^ym:/, '') || waveAfter;
+      for (const t of w) { const k = key(t); if (seen.has(k) || ban.has(k) || !fit(t, cfg)) continue; seen.add(k); out.push(t); }
+    }
+    if (out.length) return out.slice(0, n);
+  }
   const sd = seeds(c, less, tz);
   const top = sd.filter((s) => s.id).slice(0, 5);
   const famP = Promise.all(top.map((s) => api.artist(s.id!).then((r: any) => (r.tracks as Track[]).slice(0, 15)).catch(() => [] as Track[])))
