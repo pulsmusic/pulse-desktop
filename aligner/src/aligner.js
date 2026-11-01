@@ -17,6 +17,7 @@ env.backends.onnx.wasm.proxy = false;
 
 const MODEL = 'whisper-base_timestamped';
 const SR = 16000;
+const LAG = 0.1;   // по вниманию Whisper начало слова выходит в среднем на ~0,1 с позже, чем на самом деле (проверено в CI)
 let asrP = null;
 const asr = () => (asrP ||= pipeline('automatic-speech-recognition', MODEL, { device: 'wasm', dtype: { encoder_model: 'fp32', decoder_model_merged: 'q8' } }));
 
@@ -86,7 +87,7 @@ export async function alignTrack(job, onProgress = () => {}) {
     if (ts) {
       let p = 0;
       for (const i of idx) {
-        const n = tokens(lines[i].text).length; const tt = ts.slice(p, p + n).map((x) => Math.round((w.a + x) * 100) / 100); p += n;
+        const n = tokens(lines[i].text).length; const tt = ts.slice(p, p + n).map((x) => Math.round((w.a + x - LAG) * 100) / 100); p += n;
         const lo = lines[i].t - 1.2, hi = (i + 1 < lines.length ? lines[i + 1].t : dur) + 0.5;
         const ok = tt.filter((x) => x >= lo && x <= hi).length; total += n; good += ok;
         if (ok / n >= 0.6) { for (let q = 1; q < tt.length; q++) if (tt[q] < tt[q - 1] + 0.04) tt[q] = Math.round((tt[q - 1] + 0.04) * 100) / 100; res.set(i, tt); }
