@@ -1,0 +1,14 @@
+{
+  "version": "0.13.2",
+  "date": "2026-11-01",
+  "notes": [
+    "Подпевки в живом тексте подсвечиваются одновременно с основным текстом",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.13.2/pulse-app-0.13.2.zip",
+  "sha256": "cba023fc1103bf34823e1d8d7afb43199967d7f324511706d2d2c5ec1c0cb205",
+  "size": 441705,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
