@@ -9,9 +9,9 @@ import { align, tokens } from './match.js';
 
 env.allowRemoteModels = false;                     // ничего не скачивается из интернета — модель лежит рядом
 env.allowLocalModels = true;
-env.localModelPath = new URL('./models/', location.href).href;
+env.localModelPath = new URL('./models/', import.meta.url).href;
 env.useBrowserCache = false;
-env.backends.onnx.wasm.wasmPaths = new URL('./ort/', location.href).href;
+env.backends.onnx.wasm.wasmPaths = new URL('./ort/', import.meta.url).href;
 env.backends.onnx.wasm.numThreads = 1;              // один поток — компьютер не нагревается и не тормозит
 env.backends.onnx.wasm.proxy = false;
 
@@ -23,7 +23,8 @@ const asr = () => (asrP ||= pipeline('automatic-speech-recognition', MODEL, { de
 // звук → 16 кГц моно
 async function decode(buf) {
   const probe = new OfflineAudioContext(1, SR, SR);
-  const ab = await probe.decodeAudioData(buf.slice ? buf.slice(0) : buf);   // decodeAudioData сам пересчитывает частоту под контекст
+  const ab0 = ArrayBuffer.isView(buf) ? buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) : buf.slice(0);
+  const ab = await probe.decodeAudioData(ab0);   // decodeAudioData сам пересчитывает частоту под контекст
   const n = ab.length, ch = ab.numberOfChannels; const out = new Float32Array(n);
   for (let c = 0; c < ch; c++) { const d = ab.getChannelData(c); for (let i = 0; i < n; i++) out[i] += d[i] / ch; }
   return out;
