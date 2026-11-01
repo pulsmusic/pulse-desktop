@@ -4,8 +4,10 @@ import '../aligner.js';
 window.runTest = async () => {
   const meta = await (await fetch('./song.json')).json();
   const audio = await (await fetch('./song.wav')).arrayBuffer();
-  const res = await window.PulseAI.alignTrack({ audio, lines: meta.lines, debug: true });
-  return { meta, res };
+  const res = await window.PulseAI.alignTrack({ audio: audio.slice(0), lines: meta.lines });
+  // «Пересчитать» (как по кнопке): другие способы слушать, прошлая разметка — как заведомо неверная
+  const res2 = await window.PulseAI.alignTrack({ audio: audio.slice(0), lines: meta.lines, scope: 'all', prev: res.lines });
+  return { meta, res, res2 };
 };
 window.testReady = true;
 </script></body></html>

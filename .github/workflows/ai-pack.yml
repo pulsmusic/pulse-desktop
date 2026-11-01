@@ -86,5 +86,6 @@ jobs:
           print(open("ai-pack.json").read())
           PY
           gh release delete "ai-pack-$N" -R "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "ai-pack-$N" "pulse-ai-$N.zip" ai-pack.json ai-test-song.zip -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+          cp pack/aligner.js aligner.js
+          gh release create "ai-pack-$N" "pulse-ai-$N.zip" ai-pack.json ai-test-song.zip aligner.js -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Пакет ИИ $N (служебный)" --notes "Служебный пакет для живого текста. Скачивается программой автоматически." --prerelease --latest=false
