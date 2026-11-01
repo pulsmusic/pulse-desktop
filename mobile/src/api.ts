@@ -157,7 +157,7 @@ async function yj(path: string, ms = 9000): Promise<any> {
   if (YLOCAL) {
     for (let a = 0; ; a++) {
       try { return await ymLocal(path, await ymToken()); }
-      catch (e: any) { if (a >= 1 || (e && e.status && e.status < 500)) throw e; }
+      catch (e: any) { console.warn('[ym]', path.split('?')[0], e?.status || '', String(e?.message || e).slice(0, 160)); if (a >= 1 || (e && e.status && e.status < 500)) throw e; }
       await sleep(500);
     }
   }

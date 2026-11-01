@@ -32,6 +32,7 @@ import * as M_tabIcons from './TabIcons'; import * as M_audio from './audioCache
 import * as M_spectrum from './spectrum'; import * as M_theme from './theme'; import * as M_logo from './logoData';
 import { LSTAR_PAD } from './logoData';
 import { QuizScreen, QuizCard, canQuiz } from './Quiz';
+import { LiveLyrics } from './LiveLyrics';
 import * as M_water from './waterData';
 import * as M_ym from './yandex';
 import * as M_quiz from './Quiz'; import * as M_quizData from './quizData'; import * as M_ai from './ai';
@@ -2303,7 +2304,10 @@ const artistFont = (s: string, w: number) => Math.max(15, Math.min(22, Math.floo
 
 function Full({ onClose, onClosing, open, bgP }: any) {
   const P = usePlayer(); const playing = usePlaying(); const ins = useSafeAreaInsets(); const { width: W, height: H } = useWindowDimensions(); const t = P.cur; const addTo = useContext(AddCtx);
-  const [showQ, setShowQ] = useState(false); const [story, setStory] = useState(false);
+  const [showQ, setShowQ0] = useState(false); const [story, setStory] = useState(false);
+  // живой текст: обложка уменьшается (как в режиме очереди), а текст занимает середину плеера
+  const [showL, setShowL0] = useState(false);
+  const setShowQ = (v: any) => { setShowL0(false); setShowQ0(v); }; const setShowL = (v: any) => { setShowQ0(false); setShowL0(v); };
   // pr: 1 — плеер раскрыт, 0 — он превратился в капсулу мини-плеера. qm: 1 — режим очереди (обложка уменьшается)
   const pr = useSharedValue(0); const qm = useSharedValue(0); const sc = useSharedValue(playing ? 1 : 0.94);
   const sx = useSharedValue(0);   // сдвиг обложки при свайпе
@@ -2311,7 +2315,7 @@ function Full({ onClose, onClosing, open, bgP }: any) {
   // приложение под плеером чуть отодвигается вглубь (уменьшается и темнеет) — как карточка в iOS
   useAnimatedReaction(() => pr.value * (1 - Math.min(1, ty.value / (H * 0.9))), (v) => { if (bgP) bgP.value = v; }, []);
   useEffect(() => { pr.value = withTiming(1, { duration: 560, easing: EASE }); }, []);
-  useEffect(() => { qm.value = withTiming(showQ ? 1 : 0, { duration: 480, easing: EASE_IO }); }, [showQ]);
+  useEffect(() => { qm.value = withTiming(showQ || showL ? 1 : 0, { duration: 480, easing: EASE_IO }); }, [showQ, showL]);
   // Обложка чуть уменьшается только при настоящей паузе. При переключении трека плеер на долю секунды
   // «встаёт на паузу», пока грузит новый — это игнорируем (раньше из-за этого обложка подпрыгивала).
   useEffect(() => {
@@ -2412,22 +2416,23 @@ function Full({ onClose, onClosing, open, bgP }: any) {
   // по длине текста (без «дёрганья» после отрисовки), старое и новое название плавно сменяют друг друга на одном месте.
   // исполнитель — того же размера, что название (если имя длинное, уменьшается ещё, чтобы влезть целиком)
   const tf = titleFont(t.title, W - SIDE * 2 - 52), af = Math.min(tf.size, artistFont(t.artist, W - SIDE * 2 - 52));
+  const compact = showQ || showL;
   const Titles = (
     <View style={{ flex: 1, paddingRight: 8 }}>
       {/* длинное название / имя не уменьшаются, а плавно едут бегущей строкой с мягкими краями */}
-      <View style={{ height: showQ ? 28 : 50 }}>
+      <View style={{ height: compact ? 28 : 50 }}>
         <Animated.View key={t.id + 't'} entering={FadeIn.duration(420).easing(Easing.out(Easing.cubic))} exiting={FadeOut.duration(260).easing(EASE_IO)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
-          <Marquee text={t.title} height={showQ ? 28 : 30} style={{ fontFamily: SF, fontSize: showQ ? 20 : 22, lineHeight: showQ ? 26 : 28, fontWeight: '600', color: WH, letterSpacing: -0.3 }} />
+          <Marquee text={t.title} height={compact ? 28 : 30} style={{ fontFamily: SF, fontSize: compact ? 20 : 22, lineHeight: compact ? 26 : 28, fontWeight: '600', color: WH, letterSpacing: -0.3 }} />
         </Animated.View>
       </View>
-      <View style={{ height: showQ ? 24 : 28 }}>
+      <View style={{ height: compact ? 24 : 28 }}>
         <Animated.View key={t.id + 'a'} entering={FadeIn.duration(420).easing(Easing.out(Easing.cubic))} exiting={FadeOut.duration(260).easing(EASE_IO)} style={{ position: 'absolute', left: 0, right: 0, top: 0 }}>
-          <Marquee text={t.artist} height={showQ ? 24 : 28} onPress={goArtist} style={{ fontFamily: SF, fontSize: showQ ? 17 : 22, lineHeight: showQ ? 22 : 28, fontWeight: '400', color: 'rgba(255,255,255,0.64)', letterSpacing: -0.3 }} />
+          <Marquee text={t.artist} height={compact ? 24 : 28} onPress={goArtist} style={{ fontFamily: SF, fontSize: compact ? 17 : 22, lineHeight: compact ? 22 : 28, fontWeight: '400', color: 'rgba(255,255,255,0.64)', letterSpacing: -0.3 }} />
         </Animated.View>
       </View>
       {/* честно: Яндекс отдал только 30-секундный фрагмент (без входа или без подписки Плюс) */}
-      {(P as any).preview && !showQ && <Text numberOfLines={1} style={{ fontFamily: SF, fontSize: 12, lineHeight: 16, marginTop: 2, color: 'rgba(255,255,255,0.5)' }}>Фрагмент 30 с · целиком — после входа в Яндекс Музыку</Text>}
-      {!!(P as any).playErr && !showQ && <Text numberOfLines={2} style={{ fontFamily: SF, fontSize: 12, lineHeight: 16, marginTop: 2, color: '#ffb4b4' }}>{(P as any).playErr}</Text>}
+      {(P as any).preview && !compact && <Text numberOfLines={1} style={{ fontFamily: SF, fontSize: 12, lineHeight: 16, marginTop: 2, color: 'rgba(255,255,255,0.5)' }}>Фрагмент 30 с · целиком — после входа в Яндекс Музыку</Text>}
+      {!!(P as any).playErr && !compact && <Text numberOfLines={2} style={{ fontFamily: SF, fontSize: 12, lineHeight: 16, marginTop: 2, color: '#ffb4b4' }}>{(P as any).playErr}</Text>}
     </View>
   );
   const Prog = <ProgBlock cover={t.cover} seek={P.seek} />;
@@ -2449,12 +2454,19 @@ function Full({ onClose, onClosing, open, bgP }: any) {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <LIcon n="volume-1" s={20} c="rgba(255,255,255,.7)" />
       <View style={{ flex: 1 }}><Bar value={P.volume} h0={4} onChange={P.previewVolume} onDone={P.setVolume} /></View>
-      <Press onPress={() => setShowQ((x) => !x)} to={0.88} style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: showQ ? 'rgba(255,255,255,.2)' : 'transparent' }}><LIcon n="list" s={21} c={showQ ? WH : 'rgba(255,255,255,.7)'} /></Press>
+      <Press onPress={() => setShowL(!showL)} to={0.88} style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: showL ? 'rgba(255,255,255,.2)' : 'transparent' }}><Ionicons name="chatbox-ellipses-outline" size={20} color="rgba(255,255,255,.85)" /></Press>
+      <Press onPress={() => setShowQ(!showQ)} to={0.88} style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: showQ ? 'rgba(255,255,255,.2)' : 'transparent' }}><LIcon n="list" s={21} c={showQ ? WH : 'rgba(255,255,255,.7)'} /></Press>
     </View>
   );
   const Content = (
     <View style={{ flex: 1, paddingTop: cTop, paddingHorizontal: SIDE, paddingBottom: ins.bottom + 14 }}>
-      {showQ ? (
+      {showL ? (
+        <Animated.View key="l" entering={FadeIn.duration(360).easing(EASE_OUT)} exiting={FadeOut.duration(180).easing(EASE_IO)} style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 82 }}><View style={{ width: 64 }} />{Titles}<BigLike t={t} /></View>
+          <View style={{ flex: 1, marginTop: 6 }}><LiveLyrics t={t} /></View>
+          {Prog}{Controls}<View style={{ height: 14 }} />{Bottom}
+        </Animated.View>
+      ) : showQ ? (
         <Animated.View key="q" entering={FadeIn.duration(360).easing(EASE_OUT)} exiting={FadeOut.duration(180).easing(EASE_IO)} style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 82 }}><View style={{ width: 64 }} />{Titles}<BigLike t={t} /></View>
           <Text style={{ fontFamily: SF, fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.3, marginTop: 16, marginBottom: 6, color: WH }}>Далее</Text>
@@ -2482,7 +2494,7 @@ function Full({ onClose, onClosing, open, bgP }: any) {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar barStyle="light-content" />
-      <GestureDetector gesture={mkClose(!showQ)}>
+      <GestureDetector gesture={mkClose(!showQ && !showL)}>
         <Animated.View collapsable={false} style={[{ position: 'absolute', backgroundColor: '#16161a', overflow: 'hidden' }, shell]}>
           <Animated.View pointerEvents="none" style={[{ position: 'absolute', width: W, height: H }, fixed]}>
             <LiveBg u={t.cover} />
@@ -2493,8 +2505,8 @@ function Full({ onClose, onClosing, open, bgP }: any) {
             {/* «ручка» карточки — подсказка, что плеер можно смахнуть вниз */}
             <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: padT - 12, left: W / 2 - 18, width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.35)' }, grab]} />
             {/* верхняя панель — за неё же можно тянуть вниз в режиме очереди */}
-            <GestureDetector gesture={mkClose(showQ)}>
-              <View collapsable={false} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: showQ ? cTop + 64 : padT + BAR_H }}>{TopBar}</View>
+            <GestureDetector gesture={mkClose(showQ || showL)}>
+              <View collapsable={false} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: showQ || showL ? cTop + 64 : padT + BAR_H }}>{TopBar}</View>
             </GestureDetector>
           </Animated.View>
           <Animated.View pointerEvents="none" style={[{ position: 'absolute', width: cs, height: cs, overflow: 'hidden' }, fly]}>

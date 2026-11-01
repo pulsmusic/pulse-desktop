@@ -258,6 +258,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     toggleDark: () => setDark((x) => !x), setAccent, setBlack,
     toggle: () => { if (playingRef.current) { userPaused.current = true; player.pause(); } else { userPaused.current = false; player.play(); } },
     seek: (s: number) => player.seekTo(s),
+    // точное время трека прямо сейчас (для живого текста — читается каждый кадр, без перерисовок)
+    now: (): number => { try { return player.currentTime || 0; } catch { return 0; } },
     setVolume: (v: number) => { setVol(v); player.volume = v; },
     // во время перетаскивания ползунка громкости меняется только звук — без перерисовки приложения
     previewVolume: (v: number) => { player.volume = v; },

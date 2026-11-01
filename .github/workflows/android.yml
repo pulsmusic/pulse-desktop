@@ -42,6 +42,10 @@ jobs:
           npx expo-modules-autolinking resolve --platform android --json > autolink.json 2>/dev/null || true
           node -e "const j=require('./autolink.json'); for (const m of j.modules||[]) console.log(m.packageName, m.packageVersion, JSON.stringify((m.projects||[]).map(p=>p.publication||null)))" || true
           cat app.json
+      - name: Яндекс отсюда отвечает?
+        run: |
+          curl -s -m 15 -H 'X-Yandex-Music-Client: YandexMusicAndroid/24023621' https://api.music.yandex.net/landing3/chart/russia | head -c 300; echo
+          curl -s -m 15 -H 'X-Yandex-Music-Client: YandexMusicAndroid/24023621' 'https://api.music.yandex.net/search?text=kino&type=track&page=0' | head -c 300; echo
       - name: Проверка типов (для журнала)
         run: cd app && (npx tsc --noEmit 2>&1 | head -80) || true
       - name: Сборка APK
