@@ -1,0 +1,14 @@
+{
+  "version": "0.14.2",
+  "date": "2026-11-01",
+  "notes": [
+    "Обновлено оформление обложек в разделе «Собрано для вас»",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.2/pulse-app-0.14.2.zip",
+  "sha256": "a1e6681881d133906049bc0d3cd5c60807d464861ab0d002ba99e46b8560600e",
+  "size": 468013,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
