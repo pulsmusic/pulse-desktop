@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Keyboard, Linking, View, Text, ScrollView as RNScroll, TextInput, Modal, StyleSheet, Pressable, Image, ActivityIndicator, Platform, StatusBar, KeyboardAvoidingView, useWindowDimensions, ActionSheetIOS, Switch, RefreshControl } from 'react-native';
+import { Alert, Keyboard, Linking, View, Text, ScrollView as RNScroll, TextInput, Modal, StyleSheet, Pressable, Image, ActivityIndicator, Platform, StatusBar, KeyboardAvoidingView, useWindowDimensions, ActionSheetIOS, Switch, RefreshControl, BackHandler } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1767,7 +1767,7 @@ function Artist({ id, name, open }: any) {
           )) : shown.map(([v, l], i) => (
             <Animated.View key={l} entering={FadeIn.duration(520).delay(i * 70).easing(EASE_OUT)} style={{ flex: 1 }}>
               <GlassCard radius={22} tone={dk ? 'dark' : undefined} style={{ paddingVertical: 14, paddingHorizontal: 12 }}>
-                <Text numberOfLines={1} adjustsFontSizeToFit style={[ty.title2, { fontSize: 21, color: dk ? '#fff' : T.ink }]}>{v}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit={Platform.OS === 'ios'} style={[ty.title2, { fontSize: 21, color: dk ? '#fff' : T.ink }]}>{v}</Text>
                 <Text numberOfLines={1} style={[ty.footnote, { marginTop: 2, color: dk ? 'rgba(255,255,255,0.7)' : T.ink3 }]}>{l}</Text>
               </GlassCard>
             </Animated.View>
@@ -1957,7 +1957,7 @@ function ProfileScreen({ open, onTheme, onPulse }: any) {
                 <View style={{ flexDirection: 'row', paddingVertical: 14 }}>
                   {stats.map(([v, l], i) => (
                     <View key={l} style={{ flex: 1, paddingHorizontal: 14, borderLeftWidth: i ? StyleSheet.hairlineWidth : 0, borderLeftColor: dk || T.dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)' }}>
-                      <Text numberOfLines={1} adjustsFontSizeToFit style={[ty.title2, { fontSize: 21, color: ink }]}>{v}</Text>
+                      <Text numberOfLines={1} adjustsFontSizeToFit={Platform.OS === 'ios'} style={[ty.title2, { fontSize: 21, color: ink }]}>{v}</Text>
                       <Text numberOfLines={1} style={[ty.footnote, { marginTop: 2, color: ink3 }]}>{l}</Text>
                     </View>
                   ))}
@@ -2302,7 +2302,7 @@ const titleFont = (s: string, w: number) => {
 };
 const artistFont = (s: string, w: number) => Math.max(15, Math.min(22, Math.floor(w / (Math.max(1, s.length) * 0.5))));
 
-function Full({ onClose, onClosing, open, bgP }: any) {
+function Full({ onClose, onClosing, open, bgP, reg }: any) {
   const P = usePlayer(); const playing = usePlaying(); const ins = useSafeAreaInsets(); const { width: W, height: H } = useWin(); const t = P.cur; const addTo = useContext(AddCtx);
   const [showQ, setShowQ0] = useState(false); const [story, setStory] = useState(false);
   // живой текст: обложка уменьшается (как в режиме очереди), а текст занимает середину плеера
@@ -2377,6 +2377,8 @@ function Full({ onClose, onClosing, open, bgP }: any) {
   // Закрытие: карточка уезжает вниз и по пути собирается в мини-плеер (обложка садится в его кружок)
   const CLOSE = { duration: 480, easing: Easing.bezier(0.32, 0.72, 0, 1) };
   const dismiss = () => { onClosing?.(); ty.value = withTiming(0, CLOSE); pr.value = withTiming(0, CLOSE, (f) => { if (f) runOnJS(onClose)(); }); };
+  // системная кнопка «Назад» (Android): сначала закрывает текст/очередь, потом сворачивает плеер
+  if (reg) reg.current = () => { if (showL) setShowL(false); else if (showQ) setShowQ(false); else dismiss(); };
   const mkClose = (enabled: boolean) => Gesture.Pan().enabled(enabled).activeOffsetY(10).failOffsetX([-28, 28])
     .onUpdate((e) => { ty.value = Math.max(0, e.translationY); })
     .onEnd((e) => {
@@ -2764,6 +2766,19 @@ function ShellMain() {
   // ИИ-диджей открывается из вкладки «Пульс», поиска и профиля
   useEffect(() => M_ai.onOpenAi((q) => open({ k: 'ai', q })), [open]);
   const gone = useCallback((i: number) => { setStack((s) => s.slice(0, i)); setLeaving(null); }, []);
+  // системная кнопка «Назад» на Android: плеер → открытый экран → вкладка «Главная» → выход
+  const fullBack = useRef<null | (() => void)>(null);
+  const backSt = useRef({ full, closing, tab }); backSt.current = { full, closing, tab };
+  useEffect(() => {
+    const h = BackHandler.addEventListener('hardwareBackPress', () => {
+      const b = backSt.current;
+      if (b.full && !b.closing && fullBack.current) { fullBack.current(); return true; }
+      if (stackN.current) { back(); return true; }
+      if (b.tab !== 'home') { setTab('home'); return true; }
+      return false;
+    });
+    return () => h.remove();
+  }, [back]);
   const abs = StyleSheet.absoluteFill;
   const shadow = { shadowColor: '#000', shadowOpacity: T.shadow, shadowRadius: 16, shadowOffset: { width: 0, height: 12 } };
 
@@ -2868,7 +2883,7 @@ function ShellMain() {
       {/* Полный плеер — обычный слой поверх экрана (без системного Modal), поэтому после закрытия нет задержки; пока он сжимается, касания уже проходят на главный экран */}
       {full && (
         <View pointerEvents={closing ? 'none' : 'auto'} style={[abs, { zIndex: 40 }]}>
-          <Full bgP={bgP} onClosing={() => setClosing(true)} onClose={() => { setFull(false); setClosing(false); bgP.value = 0; }} open={open} />
+          <Full reg={fullBack} bgP={bgP} onClosing={() => setClosing(true)} onClose={() => { setFull(false); setClosing(false); bgP.value = 0; }} open={open} />
         </View>
       )}
     </View>

@@ -773,7 +773,7 @@ function Scratch({ onDone }: { onDone: () => void }) {
         {done && first ? (
           <Animated.View key="done" entering={FadeIn.duration(500).easing(EASE).delay(250)} style={[abs, { alignItems: 'center', paddingHorizontal: 24 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%' }}>
-              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ fontFamily: SF, fontSize: 22, lineHeight: 28, fontWeight: '600', letterSpacing: -0.3, color: T.ink, flexShrink: 1 }}>{first.title}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit={Platform.OS === 'ios'} minimumFontScale={0.75} style={{ fontFamily: SF, fontSize: 22, lineHeight: 28, fontWeight: '600', letterSpacing: -0.3, color: T.ink, flexShrink: 1 }}>{first.title}</Text>
               {!!first.explicit && <Explicit />}
             </View>
             <Text numberOfLines={1} style={{ fontFamily: SF, fontSize: 22, lineHeight: 28, fontWeight: '400', letterSpacing: -0.3, color: T.ink3 }}>{first.artist}</Text>
