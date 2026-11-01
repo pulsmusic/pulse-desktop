@@ -1,0 +1,15 @@
+{
+  "version": "0.12.8",
+  "date": "2026-11-01",
+  "notes": [
+    "Список исполнителей трека теперь открывается отдельным окном по центру — помещаются все исполнители",
+    "Меню закрываются нажатием в любом свободном месте окна",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.12.8/pulse-app-0.12.8.zip",
+  "sha256": "abc7ab6628161db37cf13333fd832f08b71286e91122f3ca73b13105890a4d2a",
+  "size": 433898,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
