@@ -61,7 +61,7 @@ async function forced(run, seg, text, language) {
   const code = language === 'russian' ? 'ru' : 'en';
   const prefix = [gc.decoder_start_token_id, gc.lang_to_id['<|' + code + '|>'], gc.task_to_id.transcribe, gc.no_timestamps_token_id].filter((x) => x != null);
   const feats = (await run.processor(seg)).input_features;
-  const out = await model.generate({ inputs: feats, decoder_input_ids: [...prefix, ...ids], max_new_tokens: 1, return_token_timestamps: true, num_frames: Math.floor(seg.length / 160) });
+  const out = await model.generate({ inputs: feats, decoder_input_ids: [...prefix, ...ids], max_new_tokens: 1, return_token_timestamps: true, num_frames: Math.floor(seg.length / 320) });   // кадры внимания энкодера — 50 в секунду
   const ts = out.token_timestamps.tolist()[0];
   return first.map((i) => +ts[prefix.length + i]);
 }
@@ -72,7 +72,7 @@ export async function alignTrack(job, onProgress = () => {}) {
   const dur = pcm.length / SR;
   const lines = (job.lines || []).filter((l) => Number.isFinite(+l.t)).map((l) => ({ t: +l.t, text: String(l.text || '') }));
   const run = await asr();
-  const W = windows(lines, dur); const res = new Map(); let good = 0, total = 0;
+  const W = windows(lines, dur); const res = new Map(); let good = 0, total = 0, dbg = null;
   for (let k = 0; k < W.length; k++) {
     const w = W[k]; const seg = pcm.subarray(Math.floor(w.a * SR), Math.floor(w.b * SR));
     if (seg.length < SR * 0.5) continue;
@@ -81,6 +81,7 @@ export async function alignTrack(job, onProgress = () => {}) {
     const idx = w.idx;
     const text = idx.map((i) => lines[i].text).join(' ');
     let ts = null; try { ts = await forced(run, seg, text, language); } catch (e) { console.log('кусок', k, e && e.message); }
+    if (job.debug) (dbg ||= []).push({ a: w.a, b: w.b, ts: ts && ts.map((x) => Math.round(x * 100) / 100) });
     if (ts) {
       let p = 0;
       for (const i of idx) {
@@ -92,7 +93,7 @@ export async function alignTrack(job, onProgress = () => {}) {
     }
     onProgress((k + 1) / W.length);
   }
-  return { lines: [...res].sort((a, b) => a[0] - b[0]), c: total ? Math.round((good / total) * 1000) / 1000 : 0, v: 2, ms: Math.round(performance.now() - t0) };
+  return { lines: [...res].sort((a, b) => a[0] - b[0]), c: total ? Math.round((good / total) * 1000) / 1000 : 0, v: 2, ms: Math.round(performance.now() - t0), dbg };
 }
 
 // мост к «Пульсу» (preload скрытого окна); в CI тест вызывает alignTrack напрямую

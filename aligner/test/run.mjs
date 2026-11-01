@@ -19,7 +19,7 @@ const total = meta.truth.reduce((a, x) => a + x.length, 0);
 const report = { время_мс: res.ms, длина_с: Math.round(meta.dur), строк_размечено: lines + ' из ' + meta.truth.length, пар_найдено: res.c,
   медиана_ошибки_с: +med.toFixed(3), ошибка_90проц_с: +p90.toFixed(3), точно_в_025с: +(within * 100).toFixed(1) + '%', слов_проверено: errs.length + ' из ' + total };
 console.log(JSON.stringify(report, null, 1));
-console.log('услышано:', (res.heard || []).map((h) => h.w + '@' + h.a.toFixed(2)).join(' '));
+console.log('куски:', JSON.stringify(res.dbg)); console.log('правда:', JSON.stringify(meta.truth)); console.log('LRC:', JSON.stringify(meta.lines.map((l) => l.t)));
 fs.writeFileSync('test-report.json', JSON.stringify({ report, res }, null, 1));
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '### Проверка ИИ-разметки\n```\n' + JSON.stringify(report, null, 1) + '\n```\n');
 if (!(lines >= meta.truth.length * 0.6 && med < 0.3)) { console.log('ПРОВЕРКА НЕ ПРОЙДЕНА'); process.exit(1); }
