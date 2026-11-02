@@ -227,8 +227,20 @@ async function playlist(uid: string, kind: string, tok: string) {
   });
 }
 async function stream(tid: number, tok: string) {
-  const infos: any[] = (await ym(`/tracks/${tid}/download-info`, tok)) || [];
-  const ok = infos.filter((i) => ['mp3', 'aac', 'he-aac'].includes(String(i.codec || '').toLowerCase()) && i.downloadInfoUrl);
+  // со входом — сначала только с токеном, и при отказе ещё раз с токеном (Яндекс иногда отвечает 403 на частые запросы);
+  // без токена (это и есть 30-секундный фрагмент) — только если токен правда не принят
+  const tk = cleanToken(tok); let infos: any[] = [];
+  if (tk && !(tk === badTok && Date.now() - badAt < 60e3)) {
+    try { infos = (await raw(`/tracks/${tid}/download-info`, tk, { ms: 9000 })) || []; }
+    catch (e: any) {
+      if (!(e && (e.status === 401 || e.status === 403))) throw e;
+      await new Promise((r) => setTimeout(r, 350));
+      infos = (await ym(`/tracks/${tid}/download-info`, tok)) || [];
+    }
+  } else infos = (await ym(`/tracks/${tid}/download-info`, tok)) || [];
+  let ok = infos.filter((i) => ['mp3', 'aac', 'he-aac'].includes(String(i.codec || '').toLowerCase()) && i.downloadInfoUrl);
+  // есть полный звук — фрагменты не берём совсем
+  if (ok.some((i) => !i.preview)) ok = ok.filter((i) => !i.preview);
   if (!ok.length) throw new HttpErr('Для этого трека Яндекс не отдал звук', 404);
   ok.sort((a, b) => (Number(b.codec === 'mp3') - Number(a.codec === 'mp3')) || ((b.bitrateInKbps || 0) - (a.bitrateInKbps || 0)));
   const best = ok[0];

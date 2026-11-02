@@ -266,11 +266,19 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const nx = [nx1, nx2].filter((x) => x && x !== cur) as Track[];
     const tms = nx.map((n, k) => {
       if (n.cover) { prefetch(hiArt(n.cover)); prefetch(smallArt(n.cover)); }
-      return setTimeout(() => (YB ? streamUrl(n).catch(() => null) : preload(n.url)), k * 400);   // Яндекс: заранее готовим ссылку
+      return setTimeout(() => (YB ? streamUrl(n).catch(() => null) : preload(n.url)), k ? 1500 : 0);   // следующий — сразу, через один — чуть позже   // Яндекс: заранее готовим ссылку
     });
     return () => tms.forEach(clearTimeout);
   }, [cur?.id, nx1?.id, nx2?.id]);
 
+  // ссылка на звук живёт около минуты — поэтому за ~35 с до конца трека готовим её для следующего ещё раз:
+  // переход мгновенный, в том числе при выключенном экране
+  const nearRef = useRef('');
+  useEffect(() => {
+    const d = st.duration || 0, c = st.currentTime || 0;
+    if (!YB || !d || d - c > 35 || !nx1 || !cur || nx1 === cur || nearRef.current === cur.id) return;
+    nearRef.current = cur.id; streamUrl(nx1).catch(() => null);
+  }, [Math.floor((st.currentTime || 0) / 5), cur?.id]);
   const curRef = useRef<Track | undefined>(undefined); curRef.current = cur;
   const saveNow = useCallback(() => {
     const { q, i, src } = S.current; if (!q[i]) return;

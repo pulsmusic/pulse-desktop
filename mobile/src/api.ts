@@ -620,7 +620,15 @@ function ymByName(name: string): Promise<any> {
 // preview = true — Яндекс отдал лишь 30-секундный фрагмент (без входа или без подписки Плюс).
 const streamMem = new Map<string, { at: number; v: { url: string; preview: boolean } }>();
 export let streamErr = '';   // почему не удалось получить звук (показывается в плеере и в настройках)
-export async function streamUrl(t: Track): Promise<{ url: string; preview: boolean } | null> {
+// Ссылка на звук. Одинаковые одновременные запросы (заранее готовим следующий трек и тут же его включили) — один запрос.
+const streamFly = new Map<string, Promise<{ url: string; preview: boolean } | null>>();
+export function streamUrl(t: Track): Promise<{ url: string; preview: boolean } | null> {
+  const k = String(t.url || t.id); const f = streamFly.get(k); if (f) return f;
+  const p = streamUrl0(t).finally(() => streamFly.delete(k)); streamFly.set(k, p); return p;
+}
+// заранее, при касании трека в списке (до того как палец отпустили): ссылка уже едет, когда трек включится
+export const warmStream = (t: Track) => { if (YB) streamUrl(t).catch(() => null); };
+async function streamUrl0(t: Track): Promise<{ url: string; preview: boolean } | null> {
   if (!YB) return null; streamErr = '';
   let id = String(t.url || '').startsWith('ym:') ? String(t.url).slice(3) : '';
   // старый трек (сохранён ещё из iTunes) — находим его в Яндексе по названию и исполнителю; найденное запоминаем
@@ -636,7 +644,8 @@ export async function streamUrl(t: Track): Promise<{ url: string; preview: boole
       id = u.slice(3); AsyncStorage.setItem(mk, id).catch(() => {});
     }
   }
-  const hit = streamMem.get(id); if (hit && Date.now() - hit.at < 50000) return hit.v;
+  // полная ссылка живёт минуту; фрагмент — 10 с (вдруг Яндекс отказал случайно — следующий раз спросим снова)
+  const hit = streamMem.get(id); if (hit && Date.now() - hit.at < (hit.v.preview ? 10000 : 50000)) return hit.v;
   if (YLOCAL) {
     try { const v: any = await ymLocal('/stream/' + id, await ymToken()); if (!v?.url) return null; capped(streamMem, 60); streamMem.set(id, { at: Date.now(), v: { url: v.url, preview: !!v.preview } }); return streamMem.get(id)!.v; }
     catch (e: any) { streamErr = String(e?.message || 'Яндекс не отдал звук'); return null; }

@@ -26,7 +26,7 @@ try { XImage = require('expo-image').Image; } catch { XImage = null; }
 try { SVG = require('react-native-svg'); } catch { SVG = null; }
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedProps, withRepeat, withTiming, withDelay, withSequence, FadeIn, Easing, interpolate, cancelAnimation, makeMutable, useFrameCallback } from 'react-native-reanimated';
 import { usePlayer, useCurId, usePlaying, useTheme } from './player';
-import { artistPhoto, artistPhotoBy, bigArt, smallArt, artPx, KIND_LABEL } from './api';
+import { artistPhoto, artistPhotoBy, bigArt, smallArt, artPx, KIND_LABEL, warmStream } from './api';
 import { RAYS_A, RAYS_B, LIGHT_GLOW } from './waterData';
 import type { Track } from './api';
 
@@ -144,12 +144,12 @@ export function hap(k: Hap = 'light') {
   } catch {}
 }
 
-export function Press({ onPress, onLongPress, style, children, hitSlop, to = 0.97, hap: hk }: any) {
+export function Press({ onPress, onLongPress, style, children, hitSlop, to = 0.97, hap: hk, onPressIn: pin }: any) {
   const k = useSharedValue(1);
   const a = useAnimatedStyle(() => ({ transform: [{ scale: k.value }] }));
   return (
     <AP onPress={onPress ? (e: any) => { if (hk) hap(hk); onPress(e); } : undefined} onLongPress={onLongPress ? (e: any) => { hap('rigid'); onLongPress(e); } : undefined} delayLongPress={380} hitSlop={hitSlop} style={[a, style]}
-      onPressIn={() => { k.value = withTiming(to, { duration: 120, easing: Easing.out(Easing.quad) }); }}
+      onPressIn={() => { pin?.(); k.value = withTiming(to, { duration: 120, easing: Easing.out(Easing.quad) }); }}
       onPressOut={() => { k.value = withTiming(1, { duration: 320, easing: EASE_OUT }); }}>
       {children}
     </AP>
@@ -436,7 +436,7 @@ const RowImpl = ({ t, i, onPress, onLongPress, onArtist, fav, onFav, noFav, noCo
   const now = cur === t.id;
   return (
     <Animated.View entering={i < 14 ? rise(Math.min(i, 10) * 35, 5, 520) : undefined}>
-      <Press onPress={onPress} hap="light" onLongPress={onLongPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: noCover ? 11 : 8, paddingLeft: num ? 8 : 16 }}>
+      <Press onPress={onPress} onPressIn={() => warmStream(t)} hap="light" onLongPress={onLongPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: noCover ? 11 : 8, paddingLeft: num ? 8 : 16 }}>
         {!!num && <Text style={[ty.subhead, { width: 24, textAlign: 'center', fontVariant: ['tabular-nums'] }]}>{i + 1}</Text>}
         {!noCover && <Cover u={smallArt(t.cover)} size={48} r={12} />}
         <View style={{ flex: 1, minWidth: 0 }}>
