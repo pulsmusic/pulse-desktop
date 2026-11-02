@@ -11,14 +11,16 @@ tries = [
   "https://music.yandex.com/handlers/music-search.jsx?type=artists&text=" + q,
   "https://music.yandex.ru/search?type=artists&text=" + q,
   "https://music.yandex.com/search?type=artists&text=" + q,
-  "https://api.music.yandex.net/artists/1005826",
+  "https://music.yandex.ru/artist/3308067",
+  "https://music.yandex.ru/artist/3308067/info",
+  "https://music.mts.ru/artist/3308067",
 ]
 src = ""
 for u in tries:
     try:
-        b = get(u).decode("utf-8", "ignore"); m = re.search(r'avatars\.yandex\.net/get-music-content/[^"\'\s\\]+?%%', b) or re.search(r'"uri"\s*:\s*"(avatars\.yandex\.net[^"]+)"', b)
-        print("ок", len(b), u, "→", m.group(0) if m else "фото не найдено", b[:160].replace("\n", " "))
-        if m and not src: src = "https://" + (m.group(1) if m.lastindex else m.group(0)).replace("%%", "1000x1000")
+        b = get(u).decode("utf-8", "ignore"); m = re.search(r'avatars\.yandex\.net/get-music-content/[^"\'\s\\]+?%%', b) or re.search(r'"uri"\s*:\s*"(avatars\.yandex\.net[^"]+)"', b) or re.search(r'og:image"\s+content="https?://(avatars\.yandex\.net[^"]+)"', b) or re.search(r'(avatars\.yandex\.net/get-music-content/[^"\'\s\\)]+/(?:\d+x\d+|orig|%%))', b)
+        print("ок", len(b), u, "→", m.group(0) if m else "фото не найдено", re.findall(r"avatars\.yandex\.net[^\"\s]{0,90}", b)[:4])
+        if m and not src: src = "https://" + re.sub(r"/(\d+x\d+|orig|%%)$", "/1000x1000", (m.group(1) if m.lastindex else m.group(0)))
     except Exception as e:
         print("нет", u, e)
 if src:
