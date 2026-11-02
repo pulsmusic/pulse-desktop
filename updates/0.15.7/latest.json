@@ -1,0 +1,13 @@
+{
+  "version": "0.15.7",
+  "date": "2026-11-02",
+  "notes": [
+    "Анимация запуска теперь показывается у всех"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.7/pulse-app-0.15.7.zip",
+  "sha256": "a35a1179ff927e0ff5348859d53d71a881cf758f25fdb9e09580ddbbf23100c7",
+  "size": 605565,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
