@@ -1,0 +1,16 @@
+{
+  "version": "0.15.0",
+  "date": "2026-11-02",
+  "notes": [
+    "Островок показывает следующий трек, прогресс по артисту, повтор и перемешивание, добавление в плейлист",
+    "Таймер сна в меню плеера — в конце музыка плавно стихает",
+    "Удалённый плейлист или трек можно вернуть прямо из островка",
+    "Итог дня, новые достижения, наушники, интернет и подсказки клавиш — тоже в островке"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.0/pulse-app-0.15.0.zip",
+  "sha256": "c3e9052b1156bea60e7586c1aceaab5ad79ec6de6ecd30b872009507ca67ba80",
+  "size": 699372,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
