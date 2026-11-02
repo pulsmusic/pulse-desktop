@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { Image, AppState } from 'react-native';
+import { Image, AppState, Platform, PermissionsAndroid } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSharedValue } from 'react-native-reanimated';
@@ -55,10 +55,24 @@ export type DayStat = { s: number; h: number[]; a: Record<string, number>; g: Re
 // чтобы она не росла часами (иначе со временем тормозят подбор новых треков и список «Далее»).
 const KEEP_BEHIND = 30;
 
-// название, исполнитель и обложка — на заблокированном экране и в уведомлении (кнопки управления — системные)
+// название, исполнитель и обложка — в шторке и на заблокированном экране. Управление плеером в шторке включаем
+// ОДИН раз: раньше оно пересоздавалось на каждом треке (Android при этом показывал «ничего не играет», а в фоне
+// мог не дать перезапустить службу плеера). Дальше для нового трека меняются только название и обложка.
+// Кнопки «назад» / «вперёд» в шторке — из доработанного плеера (patch-expo-audio.js), нажатия приходят в статус как remote.
+let lockOn = false; let notifAsked = false;
 function lockScreen(player: any, t: Track) {
-  try { player.setActiveForLockScreen?.(true, { title: t.title, artist: t.artist, albumTitle: (t as any).album || '', artworkUrl: hiArt((t as any).art || (t as any).cover) }); } catch {}
+  const meta = { title: t.title, artist: t.artist, albumTitle: (t as any).album || '', artworkUrl: hiArt((t as any).art || (t as any).cover) };
+  try {
+    if (!lockOn) { player.setActiveForLockScreen?.(true, meta, { showSeekForward: false, showSeekBackward: false }); lockOn = true; }
+    else player.updateLockScreenMetadata?.(meta);
+  } catch {}
+  // Android 13+: без разрешения на уведомления шторка плеера может не появиться — спрашиваем один раз, при первом треке
+  if (!notifAsked && Platform.OS === 'android' && (Platform.Version as number) >= 33) {
+    notifAsked = true;
+    PermissionsAndroid.request('android.permission.POST_NOTIFICATIONS' as any).catch(() => {});
+  }
 }
+
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const player = useAudioPlayer(null);
   const st = useAudioPlayerStatus(player);
@@ -211,6 +225,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     try { player.seekTo(s); } catch {}
   }, [st.isLoaded]);
 
+  // кнопки «назад» / «вперёд» в шторке и на экране блокировки
+  const remoteAt = (st as any).remoteAt as number | undefined, remoteCmd = (st as any).remote as string | undefined;
+  const lastRemote = useRef(0);
+  useEffect(() => {
+    if (!remoteAt || remoteAt === lastRemote.current) return; lastRemote.current = remoteAt;
+    if (remoteCmd === 'next') stepRef.current(1);
+    else if (remoteCmd === 'prev') { let tm = 0; try { tm = player.currentTime || 0; } catch {} if (tm > 4) player.seekTo(0); else stepRef.current(-1); }
+  }, [remoteAt]);
   useEffect(() => {
     if (!st.didJustFinish) return;
     const { q, i, rep, shuffle, src } = S.current;

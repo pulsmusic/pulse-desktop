@@ -10,7 +10,7 @@ const HEAD: Record<string, string> = { 'X-Yandex-Music-Client': 'YandexMusicAndr
 
 export const cleanToken = (t?: string | null) => { let x = String(t || '').trim(); if (x.includes('access_token=')) x = x.split('access_token=')[1]; return x.split('&')[0].trim(); };
 let badTok = ''; let badWhy = ''; let badAt = 0;
-export const tokenProblem = (t?: string | null) => (cleanToken(t) && cleanToken(t) === badTok && Date.now() - badAt < 5 * 60e3 ? badWhy : '');
+export const tokenProblem = (t?: string | null) => (cleanToken(t) && cleanToken(t) === badTok && Date.now() - badAt < 60e3 ? badWhy : '');
 const yandexHost = (u: string) => /^https:\/\/([a-z0-9-]+\.)*yandex\.(net|ru|com)\//i.test(u);
 
 class HttpErr extends Error { status: number; constructor(m: string, s: number) { super(m); this.status = s; } }
@@ -31,13 +31,25 @@ async function raw(path: string, token: string, opt: { method?: string; form?: R
     return d ? d.result : null;
   } finally { clearTimeout(tm); }
 }
-// с токеном; если он не подошёл (401/403) — повторяем без него, приложение продолжает работать (30-секундные фрагменты)
+// с токеном. Раньше любой ответ 401/403 (а Яндекс так отвечает и при живом токене — например, на трек, недоступный
+// в регионе, или при частых запросах) на 5 минут выключал вход во всём приложении — выглядело как «слетел токен».
+// Теперь при отказе проверяем сам токен (/account/status): токен рабочий — без входа повторяем только этот запрос;
+// токен правда не принят — тогда помечаем его, но проверяем снова уже через минуту.
+let tokOkAt = 0; let tokOkFor = '';
+async function tokenAlive(t: string): Promise<boolean> {
+  if (tokOkFor === t && Date.now() - tokOkAt < 10 * 60e3) return true;
+  try { const r = await raw('/account/status', t, { ms: 8000 }); const ok = !!(r && r.account && r.account.uid); if (ok) { tokOkFor = t; tokOkAt = Date.now(); } return ok; }
+  catch (e: any) { return !(e && (e.status === 401 || e.status === 403)); }   // сеть / сбой Яндекса — токен не виноват
+}
 async function ym(path: string, token: string, opt?: any) {
   const t = cleanToken(token);
-  if (!t || (t === badTok && Date.now() - badAt < 5 * 60e3)) return raw(path, '', opt);
+  if (!t || (t === badTok && Date.now() - badAt < 60e3)) return raw(path, '', opt);
   try { return await raw(path, t, opt); }
   catch (e: any) {
-    if (e && (e.status === 401 || e.status === 403)) { badTok = t; badAt = Date.now(); badWhy = 'Токен не подошёл (' + e.status + ')'; return raw(path, '', opt); }
+    if (e && (e.status === 401 || e.status === 403)) {
+      if (!(await tokenAlive(t))) { badTok = t; badAt = Date.now(); badWhy = 'Токен не подошёл (' + e.status + ')'; }
+      return raw(path, '', opt);
+    }
     throw e;
   }
 }
@@ -159,13 +171,26 @@ async function album(alid: number, tok: string) {
 async function chart(limit: number) {
   return cached(`ch:${limit}`, 3 * 3600, async () => { const r = await ym('/landing3/chart/russia', ''); return clean(((r && r.chart && r.chart.tracks) || []).slice(0, limit).map((x: any) => song(x.track))); });
 }
-async function newReleases(limit: number) {
-  return cached(`new:${limit}`, 6 * 3600, async () => {
-    const r = await ym('/landing3/new-releases', '');
-    const ids: any[] = ((r && r.newReleases) || []).slice(0, limit);
-    if (!ids.length) return [];
-    const list = await ym('/albums', '', { method: 'POST', form: { 'album-ids': ids.join(',') } });
-    return clean((list || []).map(collection));
+// Новые релизы — как в версии для ПК: блок «new-releases» витрины (landing3) с токеном. Старая точка
+// /landing3/new-releases перестала отвечать без входа — она осталась только запасным вариантом.
+async function newReleases(limit: number, tok: string) {
+  const t = cleanToken(tok);
+  return cached(`new:${limit}:${t.slice(-6)}`, 6 * 3600, async () => {
+    let out: any[] = [];
+    try {
+      const r = await ym('/landing3?blocks=new-releases', tok, { ms: 12000 });
+      const seen = new Set<string>();
+      for (const b of (r && r.blocks) || []) for (const e of b.entities || []) {
+        if (e && e.type === 'album' && e.data) { const a = collection(e.data); if (a && a.collectionId && !seen.has(String(a.collectionId))) { seen.add(String(a.collectionId)); out.push(a); } }
+      }
+    } catch {}
+    if (!out.length) {
+      const r = await ym('/landing3/new-releases', tok).catch(() => null);
+      const ids: any[] = ((r && r.newReleases) || []).slice(0, limit);
+      if (ids.length) out = clean(((await ym('/albums', tok, { method: 'POST', form: { 'album-ids': ids.join(',') } }).catch(() => [])) || []).map(collection));
+    }
+    if (!out.length) throw new HttpErr('Яндекс не отдал новые релизы', 502);   // пустой ответ не запоминаем
+    return out.slice(0, limit);
   });
 }
 // плейлист Яндекса (подборки редакции, «Плейлист дня», «Дежавю»…) → простой вид, как в версии для ПК
@@ -288,7 +313,7 @@ export async function ymLocal(path: string, token: string): Promise<any> {
   if (p === '/landing') return landing(token);
   if ((m = p.match(/^\/playlist\/([^/]+)\/([^/]+)$/))) return playlist(decodeURIComponent(m[1]), decodeURIComponent(m[2]), token);
   if (p === '/chart') return { results: await chart(lim(50, 100)) };
-  if (p === '/new') return { results: await newReleases(lim(20, 50)) };
+  if (p === '/new') return { results: await newReleases(lim(20, 50), token) };
   if ((m = p.match(/^\/stream\/(\d+)$/))) return stream(+m[1], token);
   throw new HttpErr('Нет такой точки: ' + p, 404);
 }

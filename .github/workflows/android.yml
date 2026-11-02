@@ -51,6 +51,8 @@ jobs:
           npm install --no-audit --no-fund jpeg-js
           npx expo install --fix || true
           npm dedupe --no-audit --no-fund || true
+          # свои доработки нативного плеера: кнопки «назад/вперёд» в шторке, плеер не засыпает при выключенном экране
+          node ../mobile/patch-expo-audio.js .
           npm ls --depth=0 || true
           npm ls expo-modules-autolinking || true
           npx expo-modules-autolinking resolve --platform android --json > autolink.json 2>/dev/null || true

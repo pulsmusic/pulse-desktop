@@ -181,13 +181,13 @@ function useAsync<T>(f: () => Promise<T>, d: any[], keep = false) {
 // Фон экрана: вертикальный градиент bg-top → bg-base (до 60%) + розовое свечение справа сверху
 // Фон экранов: «свет сквозь воду» (общий WaterLight из ui.tsx) — под обложками и текстом, в каждом разделе,
 // в одной фазе на всех экранах: при переходах не перезапускается.
-function Bg({ plain }: { plain?: boolean }) {
+function Bg({ plain, still }: { plain?: boolean; still?: boolean }) {
   const T: any = useT(); const { width: W, height: H } = useWin();
   if (plain) return <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: T.bgBase }]} />;
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: T.bgBase, overflow: 'hidden' }]}>
       <LinearGradient colors={[T.bgTop, T.bgBase]} locations={[0, 0.6]} style={StyleSheet.absoluteFill} />
-      <WaterLight W={W} H={H} />
+      <WaterLight W={W} H={H} still={still} />
     </View>
   );
 }
@@ -227,6 +227,10 @@ function TopEdge({ sy, plain }: { sy: any; plain?: boolean }) {
   const padT = useTopPad(); const { width: W, height: H } = useWin(); const T: any = useT();
   const solidH = padT + 56, h = solidH + 70;
   const st = useAnimatedStyle(() => ({ opacity: interpolate(sy.value, [2, 40], [0, 1], 'clamp') }));
+  // пока экран не прокручен, панели не видно — и ничего не рисуем (маска с копией фона не держится на каждом экране)
+  const [on, setOn] = useState(false);
+  useAnimatedReaction(() => sy.value > 1, (v, p) => { if (v !== p) runOnJS(setOn)(v); }, []);
+  if (!on) return null;
   if (!MaskTop) {
     // без маски (модуль не подключён): тот же фон, нарисованный градиентом — цвет в каждой точке как у фона экрана
     // (переход bgTop → bgBase на 60 % высоты окна), прозрачность: сплошной под логотипом, ниже S-кривая до нуля
@@ -248,7 +252,7 @@ function TopEdge({ sy, plain }: { sy: any; plain?: boolean }) {
         <View style={{ width: W, height: h, overflow: 'hidden' }}>
           {ios && <BlurView intensity={T.dark ? 22 : 18} tint={T.tint} style={StyleSheet.absoluteFill} />}
           {/* копия фона экрана во всю высоту окна, обрезанная сверху, — цвета и свет совпадают с фоном под лентой */}
-          <View style={{ position: 'absolute', top: 0, left: 0, width: W, height: H, opacity: ios ? 0.82 : 1 }}><Bg plain={plain} /></View>
+          <View style={{ position: 'absolute', top: 0, left: 0, width: W, height: H, opacity: ios ? 0.82 : 1 }}><Bg plain={plain} still={!ios} /></View>
         </View>
       </MaskTop>
     </Animated.View>

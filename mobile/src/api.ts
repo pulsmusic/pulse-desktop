@@ -154,7 +154,9 @@ export const YLOCAL = YB === 'local';
 // токен пользователя (Профиль → Яндекс Музыка) — идёт с каждым запросом к своему серверу:
 // без входа Яндекс многое ограничивает (и поиск, и звук), с входом — работает как в приложении Яндекса
 let ymTok: string | null = null;
-export const ymToken = async () => (ymTok ??= (await AsyncStorage.getItem('pulse_ym_token').catch(() => null)) || '');
+// токен читаем с телефона; пустой результат (например, хранилище не ответило) не запоминаем — иначе вход
+// «пропадал» до перезапуска приложения
+export const ymToken = async () => { if (ymTok) return ymTok; const v = (await AsyncStorage.getItem('pulse_ym_token').catch(() => null)) || ''; if (v) ymTok = v; return v; };
 // из вставленного текста достаём сам токен (часто вставляют кусок адреса «…access_token=XXX&token_type=…»)
 const cleanTok = (t: string) => { let x = (t || '').trim(); if (x.includes('access_token=')) x = x.split('access_token=')[1]; return x.split('&')[0].trim(); };
 export const setYmToken = async (t0: string) => { const t = cleanTok(t0); ymTok = t; if (t) await AsyncStorage.setItem('pulse_ym_token', t).catch(() => {}); else await AsyncStorage.removeItem('pulse_ym_token').catch(() => {}); mem.clear?.(); };

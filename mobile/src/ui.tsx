@@ -861,10 +861,10 @@ function LightBody({ W, H, dim, st }: { W: number; H: number; dim: number; st: a
     </Animated.View>
   );
 }
-export const WaterLight = React.memo(function WaterLight({ W, H, dim = 1 }: { W: number; H: number; dim?: number }) {
+export const WaterLight = React.memo(function WaterLight({ W, H, dim = 1, still }: { W: number; H: number; dim?: number; still?: boolean }) {
   const vis = useVisible(); const T: any = useT();
   if (T.noLight) return null;   // чёрная тема — только чёрный фон
-  return vis ? <LightLive W={W} H={H} dim={dim} /> : <LightStill W={W} H={H} dim={dim} />;
+  return vis && !still ? <LightLive W={W} H={H} dim={dim} /> : <LightStill W={W} H={H} dim={dim} />;
 });
 
 // откуда раскрывать полный плеер (прямоугольник на экране) — задаёт «Мой пульс» перед открытием; читается один раз
