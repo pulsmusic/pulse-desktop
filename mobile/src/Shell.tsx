@@ -1510,8 +1510,9 @@ function CoverBleed({ u, tint, end, top }: { u: string; tint: string; end: numbe
         <LinearGradient colors={dim.colors as any} locations={dim.locations as any} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: top + 40 }} />
         <LinearGradient colors={over.colors as any} locations={over.locations as any} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: W * 0.62 }} />
       </View>
-      <View style={{ height: solidH, backgroundColor: `rgb(${tint})` }} />
-      <LinearGradient colors={out.colors as any} locations={out.locations as any} style={{ height: FADE }} />
+      {/* под кнопками — тот же цвет, ниже он плавно уходит в фон. Одним градиентом: отдельная заливка цветом
+          на части телефонов рисовалась чёрной полосой */}
+      <LinearGradient colors={[`rgba(${tint},1)`, ...out.colors] as any} locations={[0, ...out.locations.map((x) => (solidH + x * FADE) / (solidH + FADE))] as any} style={{ height: solidH + FADE }} />
     </View>
   );
 }
