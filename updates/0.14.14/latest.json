@@ -1,0 +1,13 @@
+{
+  "version": "0.14.14",
+  "date": "2026-11-02",
+  "notes": [
+    "Строка поиска больше не съезжает и не меняет форму после нажатия на островок"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.14/pulse-app-0.14.14.zip",
+  "sha256": "d5bc7787a3122a09b35a9c614b8b5a360c34e3afa749cf4d1aa6a33d34e1822b",
+  "size": 694850,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
