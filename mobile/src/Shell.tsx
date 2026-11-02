@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Keyboard, Linking, View, Text, ScrollView as RNScroll, TextInput, Modal, StyleSheet, Pressable, Image, ActivityIndicator, Platform, StatusBar, KeyboardAvoidingView, useWindowDimensions, ActionSheetIOS, Switch, RefreshControl, BackHandler } from 'react-native';
+import { Alert, Keyboard, Linking, View, Text, ScrollView as RNScroll, TextInput, Modal, StyleSheet, Pressable, Image, ActivityIndicator, Platform, StatusBar, KeyboardAvoidingView, useWindowDimensions, ActionSheetIOS, Switch, RefreshControl, BackHandler, AppState } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedProps, useDerivedValue, withRepeat, withTiming, withSequence, withDelay, cancelAnimation, FadeIn, FadeOut, SlideInDown, SlideInRight, SlideOutRight, runOnJS, runOnUI, Easing, interpolate, interpolateColor, LinearTransition, useAnimatedScrollHandler, useAnimatedReaction, useAnimatedKeyboard } from 'react-native-reanimated';
 import * as api from './api';
 import * as upd from './updater';
+import * as ota from './ota';
 import { APP_VERSION } from './version';
 import type { Track } from './api';
 // чарт и новинки главной начинают грузиться сразу при запуске, ещё до первого кадра
@@ -324,7 +325,7 @@ function Home({ open }: any) {
       <Strip title="Любимое" data={P.favs} empty="Нажмите на сердечко у любого трека" open={open} />
       <View style={{ alignItems: 'center', marginTop: 34 }}>
         <Glass radius={999} style={{ paddingHorizontal: 13, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#ffb020' }} /><Text style={[ty.caption, { color: T.ink }]}>пульс · альфа {APP_VERSION}</Text>
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#ffb020' }} /><Text style={[ty.caption, { color: T.ink }]}>пульс · альфа {APP_VERSION}{ota.otaLabel() ? ' · ' + ota.otaLabel() : ''}</Text>
         </Glass>
         <Text style={[ty.caption, { fontWeight: '400', textAlign: 'center', maxWidth: 290, marginTop: 10, lineHeight: 16 }]}>Приложение находится в разработке. Возможны баги, недоработки и внезапные изменения — мы уже над этим работаем. Спасибо, что вы с нами!</Text>
       </View>
@@ -1875,7 +1876,7 @@ function UpdateGroup() {
   const tap = st.k === 'avail' || st.k === 'err' ? (upd.canSelfUpdate && st.u ? go : check) : st.k === 'dl' || st.k === 'check' ? undefined : check;
   return (
     <Group title="Приложение">
-      <SetRow title={`Пульс ${upd.current.version}`} sub={sub} onPress={tap}
+      <SetRow title={`Пульс ${upd.current.version}`} sub={sub || ota.otaLabel()} onPress={tap}
         right={st.k === 'avail' && upd.canSelfUpdate ? <Text style={{ color: '#fff', backgroundColor: T.accent, overflow: 'hidden', borderRadius: 18, paddingHorizontal: 16, paddingVertical: 8, fontWeight: '700' }}>Обновить</Text> : st.k === 'check' || st.k === 'dl' ? <ActivityIndicator color={T.accent} /> : undefined} />
       {st.k === 'avail' && !!st.u && st.u.notes.length > 0 && <SetRow title="Что нового" sub={st.u.notes.join(' · ')} />}
     </Group>
@@ -1883,6 +1884,22 @@ function UpdateGroup() {
 }
 // через 15 с после запуска и раз в час — тихая проверка; если вышла новая версия, один раз спрашиваем
 function useUpdateNag() {
+  // обновление «по воздуху»: при запуске и при каждом возвращении в приложение (не чаще раза в 10 минут)
+  useEffect(() => {
+    if (!ota.otaOn) return;
+    let last = 0, shown = false;
+    const run = async () => {
+      if (shown || Date.now() - last < 600e3) return; last = Date.now();
+      const o = await ota.otaFetch(); if (!o) return; shown = true;
+      Alert.alert('Обновление готово', (o.notes.length ? o.notes.map((n) => '• ' + n).join('\n') + '\n\n' : '') + 'Перезапустить сейчас? Иначе оно включится при следующем открытии.', [
+        { text: 'Позже', style: 'cancel' },
+        { text: 'Перезапустить', onPress: () => { ota.otaRestart(); } },
+      ]);
+    };
+    const t0 = setTimeout(run, 3000);
+    const sub = AppState.addEventListener('change', (s) => { if (s === 'active') run(); });
+    return () => { clearTimeout(t0); sub.remove(); };
+  }, []);
   useEffect(() => {
     if (!upd.canSelfUpdate) return;
     let asked = '';
@@ -2030,7 +2047,7 @@ function ProfileScreen({ open, onTheme, onPulse }: any) {
           <SetRow icon="person" title="Имя" value={P.profile.name} onPress={() => { setName(P.profile.name); setEdit(true); }} />
           <SetRow icon="image" title="Фото профиля" value={photo ? 'Изменить' : 'Добавить'} onPress={pick} />
         </Group>
-        <Text style={[ty.caption, { textAlign: 'center', marginTop: 24 }]}>пульс · альфа {APP_VERSION}</Text>
+        <Text style={[ty.caption, { textAlign: 'center', marginTop: 24 }]}>пульс · альфа {APP_VERSION}{ota.otaLabel() ? ' · ' + ota.otaLabel() : ''}</Text>
       </ScrollView>
       {colorOpen && <ColorSheet onClose={() => setColorOpen(false)} />}
     </>

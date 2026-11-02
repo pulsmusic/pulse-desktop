@@ -6,5 +6,7 @@ const merge = (a, b) => { for (const k of Object.keys(b)) { if (b[k] && typeof b
 const out = merge(tpl, ours);
 const [ver, build] = fs.readFileSync(verPath, 'utf8').trim().split(/\s+/);
 out.expo.version = ver; out.expo.android = { ...(out.expo.android || {}), versionCode: +build };
+// обновления «по воздуху» подходят только к своей сборке: номер сборки = версия «движка»
+out.expo.runtimeVersion = String(build);
 fs.writeFileSync(tplPath, JSON.stringify(out, null, 2));
 console.log('app.json:', ver, 'build', build);

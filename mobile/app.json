@@ -2,15 +2,19 @@
   "expo": {
     "name": "Пульс",
     "slug": "pulse",
-    "version": "0.2.5",
+    "version": "0.2.6",
     "orientation": "portrait",
     "icon": "./assets/icon/icon-dark.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": { "image": "./assets/icon/splash-dark.png", "resizeMode": "cover", "backgroundColor": "#1a0b33" },
+    "splash": {
+      "image": "./assets/icon/splash-dark.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#1a0b33"
+    },
     "android": {
       "package": "ru.pulse.app",
-      "versionCode": 6,
+      "versionCode": 7,
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon/android-foreground.png",
@@ -18,12 +22,34 @@
         "monochromeImage": "./assets/icon/android-monochrome.png",
         "backgroundColor": "#1a0b33"
       },
-      "permissions": ["android.permission.REQUEST_INSTALL_PACKAGES", "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK", "android.permission.WAKE_LOCK", "android.permission.POST_NOTIFICATIONS"],
-      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+      "permissions": [
+        "android.permission.REQUEST_INSTALL_PACKAGES",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.WAKE_LOCK",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
-      ["expo-splash-screen", { "image": "./assets/icon/splash-dark.png", "resizeMode": "cover", "backgroundColor": "#1a0b33" }],
-      "expo-audio"
-    ]
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon/splash-dark.png",
+          "resizeMode": "cover",
+          "backgroundColor": "#1a0b33"
+        }
+      ],
+      "expo-audio",
+      "expo-updates"
+    ],
+    "updates": {
+      "url": "https://pulse-online.pulsmusic.workers.dev/ota/android",
+      "enabled": true,
+      "checkAutomatically": "NEVER",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }

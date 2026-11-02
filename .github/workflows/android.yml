@@ -1,4 +1,6 @@
-# Android-версия «Пульса» (mobile/ — Expo, React Native). Собирает APK и проверяет его в эмуляторе Android.
+# Android-версия «Пульса» (mobile/ — Expo, React Native). Собирает APK (только когда меняется сборка: mobile/VERSION,
+# app.json — то есть «движок»); правки интерфейса уходят обновлением «по воздуху» (android-ota.yml).
+# Эмулятор и версия для x86_64 — только если в сообщении коммита есть [эмулятор].
 # Готовая сборка выкладывается в служебный пред-релиз android-build (подписана временным ключом CI);
 # итоговый APK подписывается постоянным ключом разработчика и выкладывается в релиз «android» отдельно
 # (ключ в репозиторий не кладётся). Обновлений программы для Windows это не касается.
@@ -6,7 +8,7 @@ name: Android (APK)
 on:
   push:
     branches: [main]
-    paths: ['mobile/**', '.github/workflows/android.yml']
+    paths: ['mobile/VERSION', 'mobile/app.json', 'mobile/merge-app-json.js', '.github/workflows/android.yml']
   workflow_dispatch:
 permissions:
   contents: write
@@ -27,6 +29,17 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Кэш npm и Gradle (между сборками)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: android-deps-${{ hashFiles('.github/workflows/android.yml') }}-${{ github.run_id }}
+          restore-keys: |
+            android-deps-${{ hashFiles('.github/workflows/android.yml') }}-
+            android-deps-
       - name: Проект Expo (SDK 54)
         run: |
           npx --yes create-expo-app@latest app --template blank-typescript@sdk-54 --no-install
@@ -34,7 +47,7 @@ jobs:
           cd app && rm -f App.tsx && cp -r ../mobile/App.tsx ../mobile/src ../mobile/assets .
           node ../mobile/merge-app-json.js app.json ../mobile/app.json ../mobile/VERSION
           npm install --no-audit --no-fund
-          npx expo install expo-audio expo-blur expo-haptics react-native-reanimated react-native-worklets react-native-safe-area-context @react-native-async-storage/async-storage @expo/vector-icons expo-image-picker expo-linear-gradient react-native-gesture-handler expo-file-system expo-intent-launcher expo-splash-screen react-native-svg expo-image @react-native-masked-view/masked-view
+          npx expo install expo-audio expo-blur expo-haptics react-native-reanimated react-native-worklets react-native-safe-area-context @react-native-async-storage/async-storage @expo/vector-icons expo-image-picker expo-linear-gradient react-native-gesture-handler expo-file-system expo-intent-launcher expo-splash-screen react-native-svg expo-image @react-native-masked-view/masked-view expo-updates
           npm install --no-audit --no-fund jpeg-js
           npx expo install --fix || true
           npm dedupe --no-audit --no-fund || true
@@ -50,9 +63,12 @@ jobs:
       - name: Проверка типов (для журнала)
         run: cd app && (npx tsc --noEmit 2>&1 | head -80) || true
       - name: Сборка APK
+        env:
+          MSG: ${{ github.event.head_commit.message }}
         run: |
           cd app && npx expo prebuild -p android --no-install
-          cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
+          A=arm64-v8a,armeabi-v7a; case "$MSG" in *'[эмулятор]'*) A=$A,x86_64;; esac
+          cd android && ./gradlew assembleRelease --no-daemon --parallel -PreactNativeArchitectures=$A
           ls -la app/build/outputs/apk/release/
       - name: KVM для эмулятора
         if: contains(github.event.head_commit.message, '[эмулятор]')
@@ -81,3 +97,12 @@ jobs:
           (cd app && npx tsc --noEmit > ../tsc.txt 2>&1 || true); F+=(tsc.txt)
           gh release view android-build -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create android-build -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Android — служебная сборка" --notes "Сборка CI для проверки. Итоговый APK — в релизе android." --prerelease --latest=false
           gh release upload android-build "${F[@]}" -R "$GITHUB_REPOSITORY" --clobber
+      - name: Зависимости этой сборки — для обновлений «по воздуху»
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          B=$(sed -n 2p mobile/VERSION | tr -d '[:space:]')
+          tar czf "deps-$B.tgz" -C app package.json package-lock.json
+          gh release view android-ota -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create android-ota -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Android — обновления по воздуху" --notes "Служебный релиз: файлы обновлений интерфейса без установки APK." --prerelease --latest=false
+          gh release upload android-ota "deps-$B.tgz" -R "$GITHUB_REPOSITORY" --clobber
