@@ -1,0 +1,14 @@
+{
+  "version": "0.15.3",
+  "date": "2026-11-02",
+  "notes": [
+    "«Моя музыка» больше не лагает при большом Любимом",
+    "Длинные списки треков подгружаются по мере прокрутки"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.3/pulse-app-0.15.3.zip",
+  "sha256": "ac1870a0b7fdd30756bfd9ae555ec49c8c9d0959f5b8f33e27f8677e319a38ae",
+  "size": 701336,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
