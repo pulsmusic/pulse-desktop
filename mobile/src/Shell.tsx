@@ -142,11 +142,13 @@ const ScrollView = (p: any) => {
   const subs = useRef(new Set<() => void>());
   const more = useMemo<MoreApi>(() => ({ sub: (f) => { subs.current.add(f); return () => { subs.current.delete(f); }; } }), []);
   const near = (e: any) => { const n = e?.nativeEvent; if (n && n.contentOffset.y + n.layoutMeasurement.height * 3.5 >= n.contentSize.height) subs.current.forEach((f) => f()); };
+  const edge = useContext(EdgeCtx);
   if (p.screen) {
     const C: any = p.anim ? Animated.ScrollView : RNScroll;
+    const onScroll = edge && !p.anim ? (e: any) => { edge.value = e.nativeEvent.contentOffset.y; p.onScroll?.(e); } : p.onScroll;
     return (
       <MoreCtx.Provider value={more}>
-        <C showsVerticalScrollIndicator={false} scrollEventThrottle={16} {...p} contentContainerStyle={{ paddingTop: top, paddingBottom: BOTTOM }}
+        <C showsVerticalScrollIndicator={false} scrollEventThrottle={16} {...p} onScroll={onScroll} contentContainerStyle={{ paddingTop: top, paddingBottom: BOTTOM }}
           onScrollEndDrag={(e: any) => { near(e); p.onScrollEndDrag?.(e); }} onMomentumScrollEnd={(e: any) => { near(e); p.onMomentumScrollEnd?.(e); }}
           onScrollBeginDrag={(e: any) => { near(e); p.onScrollBeginDrag?.(e); }} />
       </MoreCtx.Provider>
@@ -163,9 +165,10 @@ function useSettled(ms = 480) {
   useEffect(() => { const t = setTimeout(() => setOk(true), ms); return () => clearTimeout(t); }, []);
   return ok;
 }
-function useAsync<T>(f: () => Promise<T>, d: any[]) {
+// keep — при обновлении (потянули вниз) прежние данные остаются на экране, пока не пришли новые: без мигания заглушек
+function useAsync<T>(f: () => Promise<T>, d: any[], keep = false) {
   const [v, setV] = useState<T | null>(null); const [err, setErr] = useState(false);
-  useEffect(() => { let ok = true; setV(null); setErr(false); f().then((x) => ok && setV(x)).catch(() => ok && setErr(true)); return () => { ok = false; }; }, d);
+  useEffect(() => { let ok = true; if (!keep) setV(null); setErr(false); f().then((x) => ok && setV(x)).catch(() => ok && (keep ? setErr((e) => e) : setErr(true))); return () => { ok = false; }; }, d);
   return { v, err };
 }
 
@@ -193,7 +196,7 @@ function Top({ left, right, home, plain, extra, edge = true }: { left?: React.Re
   return (
     <>
       {/* без masked-view — прежнее мягкое растворение в цвет фона; с ней содержимое тает само (FadeTop) */}
-      {!MaskedView && edge && <LinearGradient pointerEvents="none" colors={g.colors as any} locations={g.locations as any} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: padT + 56 + (plain ? 50 : 34), zIndex: 2 }} />}
+      {false && edge && <LinearGradient pointerEvents="none" colors={g.colors as any} locations={g.locations as any} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: padT + 56 + (plain ? 50 : 34), zIndex: 2 }} />}
       <View style={{ position: 'absolute', top: padT, left: 0, right: 0, zIndex: 3 }}>
         {home
           ? <View style={{ height: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 }}>
@@ -204,7 +207,55 @@ function Top({ left, right, home, plain, extra, edge = true }: { left?: React.Re
     </>
   );
 }
-const Layer = ({ children, left, right, home, plain, extra, edge = true }: any) => (<View style={{ flex: 1 }}><Bg plain={plain} />{edge ? <FadeTop>{children}</FadeTop> : children}<Top left={left} right={right} home={home} plain={plain} extra={extra} edge={edge} /></View>);
+// Верх экрана (вариант Г): при прокрутке под логотипом проявляется сам фон приложения — с цветом оформления
+// и светом — и стоит на месте; ниже он без края, по S-кривой, тает в прозрачность. Лента целиком уходит под него.
+// На iPhone под фоном ещё лёгкое размытие; на Android размытия нет (дорого для слабых телефонов) — только фон.
+const EdgeCtx = React.createContext<any>(null);
+// '#rrggbb' или 'rgba(r,g,b,a)' → [r, g, b, a]
+function rgbOf(c: string): number[] {
+  const s = String(c || '#000');
+  if (s[0] === '#') { const n = parseInt(s.slice(1, 7), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 1]; }
+  const m = s.match(/[\d.]+/g) || ['0', '0', '0']; return [+m[0], +m[1], +m[2], m[3] != null ? +m[3] : 1];
+}
+function TopEdge({ sy, plain }: { sy: any; plain?: boolean }) {
+  const padT = useTopPad(); const { width: W, height: H } = useWin(); const T: any = useT();
+  const solidH = padT + 56, h = solidH + 70;
+  const st = useAnimatedStyle(() => ({ opacity: interpolate(sy.value, [2, 40], [0, 1], 'clamp') }));
+  if (!MaskedView) {
+    // Android (без масок): тот же фон, нарисованный градиентом — цвет в каждой точке как у фона экрана
+    // (переход bgTop → bgBase на 60 % высоты окна), прозрачность: сплошной под логотипом, ниже S-кривая до нуля
+    const base = rgbOf(T.bgBase), top = plain ? base : rgbOf(T.bgTop); const n = 16; const colors: string[] = [], locations: number[] = [];
+    for (let i = 0; i <= n; i++) {
+      const y = (h * i) / n; const f = Math.min(1, y / (H * 0.6));
+      const a1 = top[3] * (1 - f) + 1 * f;   // непрозрачность градиента фона в этой точке (поверх bgBase)
+      const c = [0, 1, 2].map((k) => Math.round((top[k] * (1 - f) + base[k] * f) * a1 + base[k] * (1 - a1)));
+      const tt = y <= solidH ? 0 : (y - solidH) / (h - solidH); const e = tt * tt * (3 - 2 * tt);
+      colors.push(`rgba(${c.join(',')},${(1 - e).toFixed(3)})`); locations.push(i / n);
+    }
+    return <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: h, zIndex: 2 }, st]}><LinearGradient colors={colors as any} locations={locations as any} style={{ flex: 1 }} /></Animated.View>;
+  }
+  const g = smooth('0,0,0', 1, 0, solidH / h, 1, 14);
+  const ios = Platform.OS === 'ios';
+  return (
+    <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: h, zIndex: 2 }, st]}>
+      <MaskedView style={{ flex: 1 }} maskElement={<LinearGradient colors={['#000', ...g.colors] as any} locations={[0, ...g.locations] as any} style={{ flex: 1 }} />}>
+        <View style={{ width: W, height: h, overflow: 'hidden' }}>
+          {ios && <BlurView intensity={T.dark ? 22 : 18} tint={T.tint} style={StyleSheet.absoluteFill} />}
+          {/* копия фона экрана во всю высоту окна, обрезанная сверху, — цвета и свет совпадают с фоном под лентой */}
+          <View style={{ position: 'absolute', top: 0, left: 0, width: W, height: H, opacity: ios ? 0.82 : 1 }}><Bg plain={plain} /></View>
+        </View>
+      </MaskedView>
+    </Animated.View>
+  );
+}
+function Layer({ children, left, right, home, plain, extra, edge = true }: any) {
+  const sy = useSharedValue(0);
+  return (
+    <EdgeCtx.Provider value={edge ? sy : null}>
+      <View style={{ flex: 1 }}><Bg plain={plain} />{children}{edge && <TopEdge sy={sy} plain={plain} />}<Top left={left} right={right} home={home} plain={plain} extra={extra} edge={edge} /></View>
+    </EdgeCtx.Provider>
+  );
+}
 
 // Плавный градиент без «ступенек»: прозрачность меняется по S-кривой через много точек (линейный в 2–3 точки даёт заметные полосы)
 const hexRgb = (h: string) => { const m = /^#?([0-9a-f]{6})$/i.exec(String(h).trim()); if (!m) return '255,255,255'; const n = parseInt(m[1], 16); return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`; };
@@ -322,10 +373,10 @@ const HScroll = ({ children }: { children: React.ReactNode }) => <ScrollView hor
 function Home({ open, onPulse }: any) {
   const P = usePlayer(); const ty = useTy(); const T = useT(); const { width: W } = useWin();
   const [rk, setRk] = useState(0); const [rf, setRf] = useState(false);
-  const ru = useAsync(() => api.chart('ru'), [rk]);
+  const ru = useAsync(() => api.chart('ru'), [rk], true);
   // с Яндексом новинки не зависят от чарта — грузятся одновременно с ним
-  const nw = useAsync(() => (api.YB ? api.newReleases('ru', []) : ru.v ? api.newReleases('ru', ru.v) : Promise.resolve(null)), api.YB ? [rk] : [ru.v]);
-  const land = useAsync(() => api.landing(), [rk]);
+  const nw = useAsync(() => (api.YB ? api.newReleases('ru', []) : ru.v ? api.newReleases('ru', ru.v) : Promise.resolve(null)), api.YB ? [rk] : [ru.v], true);
+  const land = useAsync(() => api.landing(), [rk], true);
   const refresh = () => { setRf(true); api.clearCache(); setRk((k) => k + 1); setTimeout(() => setRf(false), 900); };
   // один артист — один кружок: сравниваем по основному имени (без feat./соавторов) и по id
   const arts = useMemo(() => {
@@ -352,7 +403,8 @@ function Home({ open, onPulse }: any) {
         </ScrollView>
       </>)}
       <Sec right={ru.v && ru.v.length ? <SecLink onPress={() => open({ k: 'chart' })}>Весь чарт</SecLink> : undefined}>Чарты</Sec>
-      {!ru.v && !ru.err ? <Skel /> : ru.err ? <Hint>Не удалось загрузить</Hint> : <Rows list={ru.v!.slice(0, 5)} queue={ru.v!} from="chart" open={open} num noFav />}
+      {/* заглушка — те же 5 строк, что и чарт (раньше тут мелькали карточки прежнего вида) */}
+      {!ru.v && !ru.err ? <RowSkel n={5} /> : !ru.v ? <Hint>Не удалось загрузить</Hint> : <Rows list={ru.v!.slice(0, 5)} queue={ru.v!} from="chart" open={open} num noFav />}
       <Sec right={favs.length ? <SecLink onPress={() => open({ k: 'favs' })}>Смотреть все</SecLink> : undefined}>Любимое</Sec>
       {favs.length ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 16 }}>
@@ -1222,7 +1274,7 @@ function AiScreen({ open, back, q0 }: { open: (s: any) => void; back: () => void
   const T: any = useT(); const ty = useTy(); const P = usePlayer(); const ins = useSafeAreaInsets(); const top = useTopPad() + 56;
   const [msgs, setMsgs] = useState<M_ai.Msg[]>(aiMem || []); const [q, setQ] = useState(''); const [busy, setBusy] = useState(false); const [part, setPart] = useState<M_ai.Msg | null>(null);
   const [key, setKeyS] = useState<string | null>(null); const [needKey, setNeedKey] = useState(false); const [setup, setSetup] = useState(false);
-  const sc = useRef<RNScroll>(null); const inp = useRef<TextInput>(null);
+  const sc = useRef<RNScroll>(null); const inp = useRef<TextInput>(null); const edgeAi = useContext(EdgeCtx);
   // клавиатура: капсула ввода поднимается ровно над ней (на UI-потоке, в такт клавиатуре)
   const kb = useAnimatedKeyboard();
   const kbSt = useAnimatedStyle(() => ({ transform: [{ translateY: -Math.max(0, kb.height.value - DOCK_B + 8) }] }));
@@ -1258,7 +1310,7 @@ function AiScreen({ open, back, q0 }: { open: (s: any) => void; back: () => void
   return (
     <View style={{ flex: 1 }}>
       {/* список прокручивается ПОД полем ввода и мини-плеером — внизу нет непрозрачной полосы */}
-      <RNScroll ref={sc} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: top, paddingBottom: DOCK_B + 60 + 20 + (kbh ? kbh - DOCK_B : P.cur ? MINI_H + 8 : 0) }}>
+      <RNScroll ref={sc} scrollEventThrottle={16} onScroll={(e) => { if (edgeAi) edgeAi.value = e.nativeEvent.contentOffset.y; }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: top, paddingBottom: DOCK_B + 60 + 20 + (kbh ? kbh - DOCK_B : P.cur ? MINI_H + 8 : 0) }}>
         {empty ? (
           <Animated.View entering={rise(0, 8, 560)} style={{ alignItems: 'center', paddingTop: 36 }}>
             <AiIcon size={96} />
