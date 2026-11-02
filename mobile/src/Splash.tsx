@@ -16,9 +16,9 @@ const EIO = Easing.inOut(Easing.sin);
 // буквы по группам (доли ширины логотипа): п | у | л | ьс; центр звезды — 48,75 %
 const GR: [number, number][] = [[0.008, 0.197], [0.205, 0.417], [0.481, 0.664], [0.673, 0.992]];
 const SC = 0.4875;
-const AT = 520;          // буквы начинают вылетать, когда звезда почти встала
-const MIN_MS = 1500;     // раньше этого логотип не улетает — анимация успевает доиграть
-const MAX_MS = 4500;     // а дольше этого не ждём, даже если главная ещё грузится
+const AT = 220;          // буквы начинают вылетать, когда звезда почти встала
+const MIN_MS = 600;      // раньше этого логотип не улетает — вся заставка около секунды (как на ПК)
+const MAX_MS = 3500;     // а дольше этого не ждём, даже если главная ещё грузится
 let shown = false;       // один раз за запуск приложения
 // системная заставка: в сборке 7 — тёмно-фиолетовая (её цвет мягко уводим в чёрный), с 8-й — уже чёрная
 let NATIVE_BG = '';
@@ -60,10 +60,10 @@ function SplashBody({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     const go = () => {
       if (started.current) return; started.current = true; t0.current = Date.now();
-      sp.value = withDelay(80, withTiming(1, { duration: 620, easing: E1 }));
-      GR.forEach(([l, r], i) => { const c = (l + r) / 2; lp[i].value = withDelay(AT + Math.abs(SC - c) * 320, withTiming(1, { duration: 620, easing: E1 })); });
+      sp.value = withDelay(30, withTiming(1, { duration: 380, easing: E1 }));
+      GR.forEach(([l, r], i) => { const c = (l + r) / 2; lp[i].value = withDelay(AT + Math.abs(SC - c) * 180, withTiming(1, { duration: 400, easing: E1 })); });
       // разгорается, как у логотипа в приложении, и дальше тихо «дышит», пока ждём главную
-      g.value = withDelay(620, withSequence(withTiming(1, { duration: 680, easing: EIO }), withRepeat(withSequence(withTiming(0.45, { duration: 900, easing: EIO }), withTiming(1, { duration: 900, easing: EIO })), -1, false)));
+      g.value = withDelay(300, withSequence(withTiming(1, { duration: 420, easing: EIO }), withRepeat(withSequence(withTiming(0.45, { duration: 900, easing: EIO }), withTiming(1, { duration: 900, easing: EIO })), -1, false)));
     };
     if (P.ready) go(); else { const tm = setTimeout(go, 600); return () => clearTimeout(tm); }
   }, [P.ready]);
@@ -73,10 +73,10 @@ function SplashBody({ onDone }: { onDone: () => void }) {
     let left = false; let tMax: any = null, tMin: any = null; let ready = false;
     const leave = () => {
       if (left) return; left = true; clearTimeout(tMax); clearTimeout(tMin);
-      cancelAnimation(g); g.value = withTiming(0, { duration: 600, easing: EIO });
-      fly.value = withTiming(1, { duration: 620, easing: E1 });
-      inkP.value = withDelay(200, withTiming(1, { duration: 420 }));
-      bg.value = withDelay(80, withTiming(0, { duration: 440, easing: Easing.out(Easing.quad) }, (f) => { if (f) runOnJS(onDone)(); }));
+      cancelAnimation(g); g.value = withTiming(0, { duration: 380, easing: EIO });
+      fly.value = withTiming(1, { duration: 440, easing: E1 });
+      inkP.value = withDelay(120, withTiming(1, { duration: 300 }));
+      bg.value = withDelay(60, withTiming(0, { duration: 320, easing: Easing.out(Easing.quad) }, (f) => { if (f) runOnJS(onDone)(); }));
     };
     const tryLeave = () => { if (ready && Date.now() - t0.current >= MIN_MS) leave(); };
     const off = onBoot(() => { ready = true; const wait = MIN_MS - (Date.now() - t0.current); if (wait > 0) tMin = setTimeout(tryLeave, wait + 30); else tryLeave(); });
