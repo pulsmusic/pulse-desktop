@@ -1,0 +1,14 @@
+{
+  "version": "0.14.10",
+  "date": "2026-11-02",
+  "notes": [
+    "Исправлена ошибка, из-за которой кольцо прослушанного у исполнителей заполнялось неровно",
+    "Обновлено оформление фото исполнителей на главной"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.10/pulse-app-0.14.10.zip",
+  "sha256": "aa22789d6ec4ad2dd36614caa4c5bf09f4486875cbe8c7be008fed5f34e8b522",
+  "size": 692166,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
