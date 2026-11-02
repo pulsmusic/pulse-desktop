@@ -23,7 +23,7 @@ try { XImage = require('expo-image').Image; } catch { XImage = null; }
 try { SVG = require('react-native-svg'); } catch { SVG = null; }
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedProps, withRepeat, withTiming, withDelay, withSequence, FadeIn, Easing, interpolate, cancelAnimation, makeMutable, useFrameCallback } from 'react-native-reanimated';
 import { usePlayer, useCurId, usePlaying, useTheme } from './player';
-import { artistPhoto, bigArt, smallArt, KIND_LABEL } from './api';
+import { artistPhoto, artistPhotoBy, bigArt, smallArt, KIND_LABEL } from './api';
 import { RAYS_A, RAYS_B, LIGHT_GLOW } from './waterData';
 import type { Track } from './api';
 
@@ -468,10 +468,10 @@ export const AlbumRow = React.memo(function AlbumRow({ x, i, onPress }: any) {
 });
 
 // Кружок исполнителя: фото из Deezer, а если не нашлось — обложка трека
-export function ArtistDot({ name, fallback, size = 62, onPress }: { name: string; fallback?: string; size?: number; onPress?: () => void }) {
+export function ArtistDot({ name, id, fallback, size = 62, onPress }: { name: string; id?: number; fallback?: string; size?: number; onPress?: () => void }) {
   const [u, setU] = useState('');
-  // для маленьких кружков — фото 250 px, для большого на странице артиста — 1000 px
-  useEffect(() => { let ok = true; setU(''); artistPhoto(name, size <= 100).then((x) => ok && setU(x)); return () => { ok = false; }; }, [name, size]);
+  // для маленьких кружков — маленькое фото, для большого на странице артиста — большое. Есть id — ищем по нему (точнее)
+  useEffect(() => { let ok = true; setU(''); artistPhotoBy(name, id, size <= 100).then((x) => ok && x && setU(x)).catch(() => {}); return () => { ok = false; }; }, [name, id, size]);
   const body = <Cover u={u || fallback} size={size} r={size / 2} />;
   return onPress ? <Press onPress={onPress}>{body}</Press> : body;
 }

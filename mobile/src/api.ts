@@ -359,6 +359,27 @@ function deezerCard(base: string): Promise<DZ | null> {
   return dz.get(base)!;
 }
 export async function artistPhoto(name: string, small = false): Promise<string> { const d = await artistDeezer(name); return (small ? d?.photoS || d?.photo : d?.photo) || ''; }
+// Фото по id исполнителя (точнее, чем по имени: у тёзок и у имён с «feat.», «&», латиницей/кириллицей поиск по имени
+// промахивается). Карточка артиста кэшируется на сутки — заодно его страница потом открывается мгновенно.
+// Одновременно — не больше 3 запросов, чтобы ряд «Недавних» не занимал всю сеть на слабом телефоне.
+let photoBusy = 0; const photoWait: (() => void)[] = [];
+const photoSlot = async <T,>(f: () => Promise<T>): Promise<T> => {
+  if (photoBusy >= 3) await new Promise<void>((r) => photoWait.push(r));
+  photoBusy++; try { return await f(); } finally { photoBusy--; const n = photoWait.shift(); if (n) n(); }
+};
+const photoById = new Map<string, Promise<string>>();
+export function artistPhotoBy(name: string, id?: number, small = false): Promise<string> {
+  const k = (id || '') + '|' + name + '|' + (small ? 's' : 'b');
+  if (!photoById.has(k)) {
+    capped(photoById, 300);
+    photoById.set(k, photoSlot(async () => {
+      if (id) { try { const r: any = await artist(id); const i = r?.info || {}; const u = (small ? i.photoS || i.photo : i.photo || i.photoS) || ''; if (u) return u; } catch {} }
+      for (let a = 0; a < 2; a++) { const u = await artistPhoto(name, small).catch(() => ''); if (u) return u; await new Promise((r) => setTimeout(r, 1500)); }
+      return '';
+    }).then((u) => { if (!u) photoById.delete(k); return u; }));
+  }
+  return photoById.get(k)!;
+}
 
 // Средняя яркость картинки (0 — чёрная, 1 — белая): качаем крошечную копию 60×60 и считаем пиксели.
 // Нужна, чтобы выбрать цвет текста поверх цветного фона (белый на тёмном, тёмный на светлом).

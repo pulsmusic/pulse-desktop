@@ -9,6 +9,7 @@ import Animated, { useSharedValue, useAnimatedStyle, useAnimatedProps, useDerive
 import * as api from './api';
 import * as upd from './updater';
 import * as ota from './ota';
+import { MenuHost, openMenu } from './menu';
 import { APP_VERSION } from './version';
 import type { Track } from './api';
 // чарт и новинки главной начинают грузиться сразу при запуске, ещё до первого кадра
@@ -201,6 +202,7 @@ function Top({ left, right, home, plain, extra, edge = true }: { left?: React.Re
 const Layer = ({ children, left, right, home, plain, extra, edge = true }: any) => (<View style={{ flex: 1 }}><Bg plain={plain} />{edge ? <FadeTop>{children}</FadeTop> : children}<Top left={left} right={right} home={home} plain={plain} extra={extra} edge={edge} /></View>);
 
 // Плавный градиент без «ступенек»: прозрачность меняется по S-кривой через много точек (линейный в 2–3 точки даёт заметные полосы)
+const hexRgb = (h: string) => { const m = /^#?([0-9a-f]{6})$/i.exec(String(h).trim()); if (!m) return '255,255,255'; const n = parseInt(m[1], 16); return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`; };
 function smooth(rgb: string, a0: number, a1: number, from: number, to: number, n = 9) {
   const colors: string[] = [], locations: number[] = [];
   for (let i = 0; i <= n; i++) {
@@ -332,7 +334,7 @@ function Home({ open }: any) {
             {arts.map((a, i) => (
               <Animated.View key={a.name} entering={rise(Math.min(i, 8) * 40)}>
                 <Press onPress={() => (a.id ? open({ k: 'artist', id: a.id, name: a.name }) : undefined)} style={{ width: 64, alignItems: 'center' }}>
-                  <ArtistDot name={a.name} fallback={a.cover} size={AV} />
+                  <ArtistDot name={a.name} id={a.id} fallback={a.cover} size={AV} />
                   <Text numberOfLines={1} style={[ty.footnote, { marginTop: 7, color: T.ink2, fontWeight: '600', fontSize: 12 }]}>{a.name}</Text>
                 </Press>
               </Animated.View>
@@ -662,7 +664,7 @@ function Search({ open, auto }: any) {
                   <Sec>Лучший результат</Sec>
                   <Press onPress={() => (best.kind === 'artist' ? go({ k: 'artist', id: best.a.artistId, name: best.a.artistName }) : (remember(q), P.go([best.t], 0)))} style={{ marginHorizontal: 16 }}>
                     <Glass radius={22} style={{ padding: 12 }}>
-                      {best.kind === 'artist' ? <ArtistDot name={best.a.artistName} fallback={R!.tracks.find((x: Track) => x.artistId === best.a.artistId)?.cover} size={92} /> : <Cover u={best.t.cover} size={92} r={10} />}
+                      {best.kind === 'artist' ? <ArtistDot name={best.a.artistName} id={best.a.artistId} fallback={R!.tracks.find((x: Track) => x.artistId === best.a.artistId)?.cover} size={92} /> : <Cover u={best.t.cover} size={92} r={10} />}
                       <Text numberOfLines={1} style={[ty.title1, { marginTop: 14 }]}>{best.kind === 'artist' ? best.a.artistName : best.t.title}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
                         <View style={{ paddingHorizontal: 10, height: 24, borderRadius: 12, backgroundColor: T.glass, borderWidth: 1, borderColor: T.stroke, justifyContent: 'center' }}><Text style={ty.caption}>{best.kind === 'artist' ? 'Исполнитель' : 'Трек'}</Text></View>
@@ -682,7 +684,7 @@ function Search({ open, auto }: any) {
               ))}
               {showArtists && !!R && R.artists.length > 0 && <Sec>Исполнители</Sec>}
               {showArtists && !!R && R.artists.slice(0, f === 'all' ? 3 : 15).map((a: any) => <Press key={a.artistId} onPress={() => go({ k: 'artist', id: a.artistId, name: a.artistName })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, paddingHorizontal: 16 }}>
-                <ArtistDot name={a.artistName} size={48} />
+                <ArtistDot name={a.artistName} id={a.artistId} size={48} />
                 <View style={{ flex: 1 }}><Text numberOfLines={1} style={ty.headline}>{a.artistName}</Text><Text style={[ty.subhead, { marginTop: 2 }]}>{api.genreRu(a.primaryGenreName) || 'Исполнитель'}</Text></View></Press>)}
               {showAlbums && !!R && R.albums.length > 0 && <AlbumStrip title="Альбомы" albums={R.albums} open={go} />}
             </View>
@@ -886,7 +888,7 @@ function PlaylistScreen({ id, fav, recent, fresh, open, back }: any) {
       ['Удалить плейлист', del],
     ];
     if (Platform.OS === 'ios') ActionSheetIOS.showActionSheetWithOptions({ title: `Плейлист «${pl.name}»`, options: [...items.map((x) => x[0]), 'Отмена'], cancelButtonIndex: items.length, destructiveButtonIndex: items.length - 1 }, (i) => items[i]?.[1]());
-    else Alert.alert(`Плейлист «${pl.name}»`, undefined, [...items.map(([text, onPress], i) => ({ text, onPress, style: (i === items.length - 1 ? 'destructive' : 'default') as any })), { text: 'Отмена', style: 'cancel' as any }]);
+    else { const ic = ['create-outline', 'images-outline', 'camera-outline', ...(pl.cover ? ['color-wand-outline'] : []), 'trash-outline']; openMenu(`Плейлист «${pl.name}»`, items.map(([text, onPress], i) => ({ text, onPress, icon: ic[i], danger: i === items.length - 1 }))); }
   };
   const mins = Math.max(1, Math.round(tracks.reduce((s, t) => s + (t.dur || 30), 0) / 60));
   return (
@@ -1958,7 +1960,7 @@ function ProfileScreen({ open, onTheme, onPulse }: any) {
     const opts = ['Выбрать из галереи', 'Сделать фото', ...(has ? ['Удалить фото'] : []), 'Отмена'];
     const acts = [fromLibrary, fromCamera, ...(has ? [removePhoto] : [])];
     if (Platform.OS === 'ios') ActionSheetIOS.showActionSheetWithOptions({ title: 'Фото профиля', options: opts, cancelButtonIndex: opts.length - 1, destructiveButtonIndex: has ? 2 : undefined }, (i) => { acts[i]?.(); });
-    else Alert.alert('Фото профиля', undefined, [...opts.slice(0, -1).map((o, i) => ({ text: o, onPress: acts[i], style: (has && i === 2 ? 'destructive' : 'default') as any })), { text: 'Отмена', style: 'cancel' as any }]);
+    else { const ic = ['images-outline', 'camera-outline', 'trash-outline']; openMenu('Фото профиля', opts.slice(0, -1).map((o, i) => ({ text: o, onPress: acts[i], icon: ic[i], danger: has && i === 2 }))); }
   };
   const st = P.stats || { sec: 0, tracks: {}, artists: {} };
   const topT: any = (Object.values(st.tracks) as any[]).sort((a, b) => b.s - a.s)[0];
@@ -2448,11 +2450,11 @@ function Full({ onClose, onClosing, open, bgP, reg }: any) {
     if (i === 3) setStory(true);
     if (i === 1 && t.artistId) { dismiss(); open({ k: 'artist', id: t.artistId, name: t.artist }); }
     if (i === 2 && t.albumId) { dismiss(); open({ k: 'album', id: t.albumId }); } });
-    else Alert.alert(t.title, undefined, [
-      { text: 'Добавить в плейлист', onPress: () => addTo(t) },
-      ...(t.artistId ? [{ text: 'Перейти к артисту', onPress: () => { dismiss(); open({ k: 'artist', id: t.artistId, name: t.artist }); } }] : []),
-      { text: 'История трека', onPress: () => setStory(true) },
-      { text: 'Отмена', style: 'cancel' as any },
+    else openMenu(t.title, [
+      { text: 'Добавить в плейлист', icon: 'add-circle-outline', onPress: () => addTo(t) },
+      ...(t.artistId ? [{ text: 'Перейти к артисту', icon: 'person-outline', onPress: () => { dismiss(); open({ k: 'artist', id: t.artistId, name: t.artist }); } }] : []),
+      ...(t.albumId ? [{ text: 'Перейти к альбому', icon: 'disc-outline', onPress: () => { dismiss(); open({ k: 'album', id: t.albumId }); } }] : []),
+      { text: 'История трека', icon: 'book-outline', onPress: () => setStory(true) },
     ]); };
   const goArtist = () => { if (t.artistId) { dismiss(); open({ k: 'artist', id: t.artistId, name: t.artist }); } };
   const source = t.album && t.album !== t.title ? t.album : t.artist;
@@ -2743,7 +2745,7 @@ function TabDock({ tab, onTab }: { tab: string; onTab: (k: any) => void }) {
   const pill = useAnimatedStyle(() => ({ transform: [{ translateX: px.value * tw }] }), [tw]);
   const abs = StyleSheet.absoluteFill;
   return (
-    <Matte live radius={TAB_H / 2} strong style={{ position: 'absolute', left: 16, right: 16, bottom: DOCK_B, height: TAB_H, zIndex: 30 }}>
+    <View style={{ position: 'absolute', left: 16, right: 16, bottom: DOCK_B, height: TAB_H, zIndex: 30 }}>
       <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 6, top: 6, width: tw, height: TAB_H - 12, borderRadius: (TAB_H - 12) / 2, overflow: 'hidden', backgroundColor: (T as any).accentPill }, pill]}>
         {/* двухцветный вариант — пилюля переливается из первого цвета во второй */}
         {(T as any).duo && <LinearGradient colors={(T as any).tri ? [(T as any).accentPillA, (T as any).accentPillB, (T as any).accentPillC] : [(T as any).accentPillA, (T as any).accentPillB]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />}
@@ -2760,7 +2762,7 @@ function TabDock({ tab, onTab }: { tab: string; onTab: (k: any) => void }) {
             <Text style={[ty.caption, { fontSize: 10.5, fontWeight: '600', color: on ? T.accentText : T.ink3 }]}>{lb}</Text>
           </Press>); })}
       </View>
-    </Matte>
+    </View>
   );
 }
 
@@ -2786,6 +2788,10 @@ function StaleFiles({ files }: { files: string[] }) {
 function ShellMain() {
   useUpdateNag();
   const P = usePlayer(); const T = useT(); const ty = useTy(); const ins = useSafeAreaInsets(); const { width } = useWin();
+  // тёмная тема — снизу почти чёрный; светлая — цвет фона (на чёрном не читались бы тёмные подписи вкладок)
+  const dockRgb = (T as any).dark ? ((T as any).black ? '0,0,0' : '10,9,13') : hexRgb((T as any).bgBase || '#ffffff');
+  const dockFade = useMemo(() => smooth(dockRgb, 0, 1, 0, 0.62, 12), [dockRgb]);
+  const dockMini = (T as any).dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
   const padT = useTopPad(); const [addFor, setAddFor] = useState<Track | null>(null); const [dir, setDir] = useState(1);
   const bgP = useSharedValue(0);   // насколько раскрыт большой плеер (0…1) — приложение под ним уходит вглубь
   const deepV = useSharedValue(0);   // 1 — плеер раскрыт полностью: приложение под ним можно не рисовать (пока плеер не тянут вниз)
@@ -2904,6 +2910,10 @@ function ShellMain() {
         </GestureDetector>
       )}
 
+      {/* нижний бар без панели: экран снизу мягко уходит в тёмное, вкладки и мини-плеер лежат прямо на нём */}
+      {!quizOn && !aiOn && <Animated.View pointerEvents="none" entering={FadeIn.duration(400)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: DOCK_B + TAB_H + (P.cur ? 8 + MINI_H : 0) + 96, zIndex: 29 }}>
+        <LinearGradient colors={dockFade.colors as any} locations={dockFade.locations as any} style={StyleSheet.absoluteFill} />
+      </Animated.View>}
       {/* во время квиза меню и мини-плеер прячутся — квиз во весь экран */}
       {!quizOn && !aiOn && <Animated.View entering={rise(40, 16, 440)} exiting={FadeOut.duration(200).easing(EASE_IO)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, top: 0, zIndex: 30 }} pointerEvents="box-none"><TabDock tab={tab} onTab={goTab} /></Animated.View>}
 
@@ -2920,7 +2930,7 @@ function ShellMain() {
       {P.cur && !quizOn && !(tab === 'pulse' && P.src === 'pulse' && shown.length === 0) && (
         <GestureDetector gesture={miniG}>
           <Animated.View entering={rise(0, 14, 460)} exiting={FadeOut.duration(260).easing(EASE_IO)} style={{ position: 'absolute', left: 16, right: 16, bottom: DOCK_B + TAB_H + 8, height: MINI_H, zIndex: 31, elevation: 5, borderRadius: 30 }}>
-            <Matte live radius={30} strong style={abs} />
+            <View style={[abs, { borderRadius: 30, backgroundColor: dockMini }]} />
             <Pressable onPress={openFull} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 8, paddingRight: 6, borderRadius: 30, overflow: 'hidden' }}>
               <MiniArt u={api.smallArt(P.cur.cover)} />
               <View style={{ flex: 1, height: 40 }}>
@@ -2938,6 +2948,7 @@ function ShellMain() {
       </Animated.View>
       <Animated.View pointerEvents="none" style={[abs, { backgroundColor: '#000', zIndex: 35 }, dimSt]} />
       {addFor && <AddSheet t={addFor} onClose={() => setAddFor(null)} />}
+      <MenuHost />
       {wipe && <ThemeWipe w={wipe} onCovered={() => { hap('medium'); if (wipe.kind === 'black') P.setBlack(!!wipe.on); else P.toggleDark(); }} onDone={() => setWipe(null)} />}
       {/* Полный плеер — обычный слой поверх экрана (без системного Modal), поэтому после закрытия нет задержки; пока он сжимается, касания уже проходят на главный экран */}
       {full && (
