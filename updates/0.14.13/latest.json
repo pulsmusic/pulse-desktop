@@ -1,0 +1,13 @@
+{
+  "version": "0.14.13",
+  "date": "2026-11-02",
+  "notes": [
+    "Островок в строке поиска раскрывается плавнее — текст больше не обрывается многоточием во время анимации"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.13/pulse-app-0.14.13.zip",
+  "sha256": "b042c4d4189aaeeaea8b819d94f6df977e7af6f7d2301fe99cf150e9e6f6e3f8",
+  "size": 694810,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
