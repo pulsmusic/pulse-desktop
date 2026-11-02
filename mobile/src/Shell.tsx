@@ -67,19 +67,27 @@ try { MaskedView = Platform.OS === 'android' ? null : require('@react-native-mas
 
 // Аватар, который при прокрутке вверх уходит в «остров»: уменьшается, размывается, темнеет и исчезает в нём —
 // как в Telegram. p — прогресс 0…1 (0 — на месте, 1 — уже в острове).
+// На Android острова нет: кружок просто уезжает вверх вместе со страницей, чуть уменьшается и плавно растворяется.
+// Только прозрачность и сдвиг/масштаб одного слоя — без размытия, затемнения и теней (они и давали подтормаживания).
+const ANDROID_FLY = Platform.OS === 'android';
 function useIslandStyle(p: any, size: number, extraTop?: any) {
   const padT = useTopPad(); const isl = island(padT);
   const k = isl.h / size;
   const body = useAnimatedStyle(() => {
+    if (ANDROID_FLY) {
+      const q = Math.min(1, Math.max(0, p.value));
+      const o = 1 - q * q * (3 - 2 * q);   // плавная S-кривая: начинает и заканчивает растворяться мягко
+      return { opacity: o, transform: [...(extraTop ? [{ translateY: extraTop.value }] : []), { scale: 1 - 0.12 * q }] };
+    }
     const q = Math.min(1, Math.max(0, p.value));
     const e = Math.pow(q, 1.25);
     const s = 1 - (1 - k) * e;
     const stretch = 1 + 0.55 * interpolate(q, [0.8, 1], [0, 1], 'clamp');   // у самого острова чуть вытягивается в «капсулу»
     return { opacity: interpolate(q, [0.84, 1], [1, 0], 'clamp'), transform: [...(extraTop ? [{ translateY: extraTop.value }] : []), { scaleX: s * stretch }, { scaleY: s }] };
   });
-  const blur = useAnimatedStyle(() => ({ opacity: interpolate(p.value, [0.1, 0.65], [0, 1], 'clamp') }));
-  const dark = useAnimatedStyle(() => ({ opacity: interpolate(p.value, [0.35, 0.95], [0, 1], 'clamp') }));
-  const lift = useAnimatedStyle(() => ({ opacity: interpolate(p.value, [0, 0.4], [1, 0], 'clamp') }));   // тень и значки уходят первыми
+  const blur = useAnimatedStyle(() => ({ opacity: ANDROID_FLY ? 0 : interpolate(p.value, [0.1, 0.65], [0, 1], 'clamp') }));
+  const dark = useAnimatedStyle(() => ({ opacity: ANDROID_FLY ? 0 : interpolate(p.value, [0.35, 0.95], [0, 1], 'clamp') }));
+  const lift = useAnimatedStyle(() => ({ opacity: ANDROID_FLY ? 1 : interpolate(p.value, [0, 0.4], [1, 0], 'clamp') }));   // тень и значки уходят первыми
   return { body, blur, dark, lift, isl };
 }
 
@@ -1287,13 +1295,13 @@ function ArtistFly({ f }: { f: FlyInfo }) {
   const r = f.size / 2;
   return (
     <Animated.View pointerEvents="none" entering={FadeIn.duration(450).easing(EASE_OUT)} style={{ position: 'absolute', zIndex: 6, left: W / 2 - r, top: f.yc - r, width: f.size, height: f.size }}>
-    <Animated.View style={[{ width: f.size, height: f.size }, st.body]}>
+    <Animated.View renderToHardwareTextureAndroid style={[{ width: f.size, height: f.size }, st.body]}>
       <Animated.View style={[StyleSheet.absoluteFill, { borderRadius: r, backgroundColor: f.ring ? 'transparent' : T.ph, shadowColor: f.ring || '#000', shadowOpacity: f.ring ? 0.35 : T.dark || H.onDark ? 0.5 : 0.28, shadowRadius: f.ring ? 24 : 30, shadowOffset: { width: 0, height: f.ring ? 12 : 22 } }, st.lift]} />
       {!!f.ring && <Ring size={f.size} w={3} c1={f.ring} c2={f.ring2} c3={f.ring3} />}
       <View style={{ position: 'absolute', left: inset, top: inset, width: ci, height: ci, borderRadius: ci / 2, overflow: 'hidden', backgroundColor: src ? T.ph : T.glass, alignItems: 'center', justifyContent: 'center' }}>
         {src ? <Image source={{ uri: src }} style={StyleSheet.absoluteFill} /> : <Text style={{ fontFamily: SF, fontSize: ci * 0.4, fontWeight: '600', color: T.ink3 }}>{f.letter || '?'}</Text>}
-        {!!src && <Animated.Image source={{ uri: src }} blurRadius={24} style={[StyleSheet.absoluteFill, st.blur]} />}
-        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }, st.dark]} />
+        {!!src && !ANDROID_FLY && <Animated.Image source={{ uri: src }} blurRadius={24} style={[StyleSheet.absoluteFill, st.blur]} />}
+        {!ANDROID_FLY && <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }, st.dark]} />}
       </View>
       {!!f.badge && (
         <Animated.View style={[{ position: 'absolute', right: 8, bottom: 8, width: 38, height: 38, borderRadius: 19, backgroundColor: f.ring || T.accent, borderWidth: 3, borderColor: T.bgBase, alignItems: 'center', justifyContent: 'center' }, st.lift]}>

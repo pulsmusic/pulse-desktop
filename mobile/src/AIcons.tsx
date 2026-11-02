@@ -34,7 +34,7 @@ const Layer = ({ s, st, children }: { s: number; st?: any; children: any }) => (
   </Animated.View>
 );
 
-// назад / вперёд. go — счётчик нажатий
+// назад / вперёд. go — счётчик нажатий. Треугольники нарисованы остриём влево, поэтому «вперёд» (dir = 1) зеркалим
 export function ASkip({ dir, s = 38, c = '#fff', go }: { dir: 1 | -1; s?: number; c?: string; go: number }) {
   const v = useGo(go, 560); const u = s / 24;
   const t1 = useAnimatedStyle(() => ({ transform: [{ translateX: kf(v.value, [[0, 0], [0.35, -3.5 * u], [1, 0]]) }] }));
@@ -45,7 +45,7 @@ export function ASkip({ dir, s = 38, c = '#fff', go }: { dir: 1 | -1; s?: number
   });
   if (!SV) return <Ionicons name={dir < 0 ? 'play-back' : 'play-forward'} size={s} color={c} />;
   return (
-    <View style={{ width: s, height: s, transform: [{ scaleX: dir }] }}>
+    <View style={{ width: s, height: s, transform: [{ scaleX: -dir }] }}>
       <Layer s={s} st={t1}><SV.Path d="M11.3 7.6L4.9 12L11.3 16.4Z" {...TRI(c)} /></Layer>
       <Layer s={s} st={t2}><SV.Path d="M19.4 7.6L13 12L19.4 16.4Z" {...TRI(c)} /></Layer>
     </View>
