@@ -1,0 +1,14 @@
+{
+  "version": "0.15.6",
+  "date": "2026-11-02",
+  "notes": [
+    "Анимация запуска — один в один с телефоном",
+    "Программа запускается быстрее"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.6/pulse-app-0.15.6.zip",
+  "sha256": "9e65be1ab134a44d8631d18dae448acf3191471d5851375839ee43fda997d8a3",
+  "size": 605550,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
