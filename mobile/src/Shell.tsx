@@ -10,7 +10,6 @@ import * as api from './api';
 import * as upd from './updater';
 import * as ota from './ota';
 import { MenuHost, openMenu, openDialog } from './menu';
-import { DOCK_FADE } from './dockFade';
 import { APP_VERSION } from './version';
 import type { Track } from './api';
 // чарт и новинки главной начинают грузиться сразу при запуске, ещё до первого кадра
@@ -2796,6 +2795,13 @@ function ShellMain() {
   // мини-плеер — сплошная карточка (не просвечивает): тёмная в тёмной теме, белая в светлой
   const dockMini = (T as any).dark ? ((T as any).black ? '#141416' : '#1d1c23') : '#ffffff';
   const fadeL = Math.round(width * 0.62);   // зона перехода над мини-плеером (≈ три строки списка)
+  // Кривая без изломов на обоих концах (smootherstep): и в начале, и там, где переход становится сплошным,
+  // наклон нулевой. Если переход упирается в сплошной цвет «под углом», глаз видит на этом месте чёткую линию.
+  const dockFade = useMemo(() => {
+    const colors: string[] = [], locations: number[] = []; const N = 40;
+    for (let i = 0; i <= N; i++) { const x = i / N; const e = x * x * x * (x * (x * 6 - 15) + 10); colors.push(`rgba(${dockRgb},${e.toFixed(4)})`); locations.push(x); }
+    return { colors, locations };
+  }, [dockRgb]);
   const padT = useTopPad(); const [addFor, setAddFor] = useState<Track | null>(null); const [dir, setDir] = useState(1);
   const bgP = useSharedValue(0);   // насколько раскрыт большой плеер (0…1) — приложение под ним уходит вглубь
   const deepV = useSharedValue(0);   // 1 — плеер раскрыт полностью: приложение под ним можно не рисовать (пока плеер не тянут вниз)
@@ -2915,9 +2921,9 @@ function ShellMain() {
       )}
 
       {/* нижний бар без панели: экран снизу мягко уходит в тёмное, вкладки и мини-плеер лежат прямо на нём */}
-      {/* переход — заранее нарисованная картинка с лёгким шумом (без полос), ниже — сплошной цвет */}
+      {/* переход над мини-плеером (40 точек, без изломов), ниже — сплошной цвет фона */}
       {!quizOn && !aiOn && <Animated.View pointerEvents="none" entering={FadeIn.duration(400)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 29 }}>
-        <Image source={{ uri: DOCK_FADE }} resizeMode="stretch" fadeDuration={0} style={{ width: '100%', height: fadeL, tintColor: `rgb(${dockRgb})` }} />
+        <LinearGradient colors={dockFade.colors as any} locations={dockFade.locations as any} style={{ width: '100%', height: fadeL }} />
         <View style={{ height: DOCK_B + TAB_H + (P.cur ? 8 + MINI_H : 0), backgroundColor: `rgb(${dockRgb})` }} />
       </Animated.View>}
       {/* во время квиза меню и мини-плеер прячутся — квиз во весь экран */}
