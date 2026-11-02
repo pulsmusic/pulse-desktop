@@ -277,7 +277,7 @@ export function PulseBar() {
   // и симметрия относительно центра капсулы. Все иконки — одного визуального размера (24 pt).
   return (
     <View style={{ flex: 1, borderRadius: 30 }}>
-      <View style={[abs, { borderRadius: 30, backgroundColor: T.dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)' }]} />
+      <View style={[abs, { borderRadius: 30, backgroundColor: T.dark ? (T.black ? '#141416' : '#1d1c23') : '#ffffff', elevation: T.dark ? 0 : 3 }]} />
       <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10 }}>
         <BarBtn onPress={dislike} k={k1}><HeartFill size={24} color={T.ink} crack split={split} /></BarBtn>
         {/* треугольник «пуск» уже оптически сдвинут вправо в самой иконке — ставим ровно по центру */}

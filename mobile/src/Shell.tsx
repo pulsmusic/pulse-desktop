@@ -10,6 +10,7 @@ import * as api from './api';
 import * as upd from './updater';
 import * as ota from './ota';
 import { MenuHost, openMenu, openDialog } from './menu';
+import { DOCK_FADE } from './dockFade';
 import { APP_VERSION } from './version';
 import type { Track } from './api';
 // чарт и новинки главной начинают грузиться сразу при запуске, ещё до первого кадра
@@ -2790,8 +2791,9 @@ function ShellMain() {
   const P = usePlayer(); const T = useT(); const ty = useTy(); const ins = useSafeAreaInsets(); const { width } = useWin();
   // тёмная тема — снизу почти чёрный; светлая — цвет фона (на чёрном не читались бы тёмные подписи вкладок)
   const dockRgb = (T as any).dark ? ((T as any).black ? '0,0,0' : '10,9,13') : hexRgb((T as any).bgBase || '#ffffff');
-  const dockFade = useMemo(() => smooth(dockRgb, 0, 1, 0, 0.62, 12), [dockRgb]);
-  const dockMini = (T as any).dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+  // мини-плеер — сплошная карточка (не просвечивает): тёмная в тёмной теме, белая в светлой
+  const dockMini = (T as any).dark ? ((T as any).black ? '#141416' : '#1d1c23') : '#ffffff';
+  const fadeL = Math.round(width * 0.62);   // зона перехода над мини-плеером (≈ три строки списка)
   const padT = useTopPad(); const [addFor, setAddFor] = useState<Track | null>(null); const [dir, setDir] = useState(1);
   const bgP = useSharedValue(0);   // насколько раскрыт большой плеер (0…1) — приложение под ним уходит вглубь
   const deepV = useSharedValue(0);   // 1 — плеер раскрыт полностью: приложение под ним можно не рисовать (пока плеер не тянут вниз)
@@ -2911,8 +2913,10 @@ function ShellMain() {
       )}
 
       {/* нижний бар без панели: экран снизу мягко уходит в тёмное, вкладки и мини-плеер лежат прямо на нём */}
-      {!quizOn && !aiOn && <Animated.View pointerEvents="none" entering={FadeIn.duration(400)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: DOCK_B + TAB_H + (P.cur ? 8 + MINI_H : 0) + 96, zIndex: 29 }}>
-        <LinearGradient colors={dockFade.colors as any} locations={dockFade.locations as any} style={StyleSheet.absoluteFill} />
+      {/* переход — заранее нарисованная картинка с лёгким шумом (без полос), ниже — сплошной цвет */}
+      {!quizOn && !aiOn && <Animated.View pointerEvents="none" entering={FadeIn.duration(400)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 29 }}>
+        <Image source={{ uri: DOCK_FADE }} resizeMode="stretch" fadeDuration={0} style={{ width: '100%', height: fadeL, tintColor: `rgb(${dockRgb})` }} />
+        <View style={{ height: DOCK_B + TAB_H + (P.cur ? 8 + MINI_H : 0), backgroundColor: `rgb(${dockRgb})` }} />
       </Animated.View>}
       {/* во время квиза меню и мини-плеер прячутся — квиз во весь экран */}
       {!quizOn && !aiOn && <Animated.View entering={rise(40, 16, 440)} exiting={FadeOut.duration(200).easing(EASE_IO)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, top: 0, zIndex: 30 }} pointerEvents="box-none"><TabDock tab={tab} onTab={goTab} /></Animated.View>}
@@ -2930,7 +2934,7 @@ function ShellMain() {
       {P.cur && !quizOn && !(tab === 'pulse' && P.src === 'pulse' && shown.length === 0) && (
         <GestureDetector gesture={miniG}>
           <Animated.View entering={rise(0, 14, 460)} exiting={FadeOut.duration(260).easing(EASE_IO)} style={{ position: 'absolute', left: 16, right: 16, bottom: DOCK_B + TAB_H + 8, height: MINI_H, zIndex: 31, elevation: 5, borderRadius: 30 }}>
-            <View style={[abs, { borderRadius: 30, backgroundColor: dockMini }]} />
+            <View style={[abs, { borderRadius: 30, backgroundColor: dockMini, elevation: (T as any).dark ? 0 : 3 }]} />
             <Pressable onPress={openFull} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 8, paddingRight: 6, borderRadius: 30, overflow: 'hidden' }}>
               <MiniArt u={api.smallArt(P.cur.cover)} />
               <View style={{ flex: 1, height: 40 }}>
