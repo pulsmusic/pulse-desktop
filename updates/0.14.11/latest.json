@@ -1,0 +1,15 @@
+{
+  "version": "0.14.11",
+  "date": "2026-11-02",
+  "notes": [
+    "Улучшены кольца у исполнителей: ровная толщина и скруглённые концы",
+    "Градиентные темы оформления стали заметнее: лучи, меню и элементы управления переливаются цветами темы",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.11/pulse-app-0.14.11.zip",
+  "sha256": "7c6e5cf4929c8696ae83f98a8c107ede31fc9f2def7fdd006847b01354c21766",
+  "size": 693061,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
