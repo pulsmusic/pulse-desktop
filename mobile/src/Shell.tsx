@@ -71,6 +71,10 @@ const island = (padT: number) => (Platform.OS === 'ios' ? (padT >= 51 ? { y: pad
 let MaskedView: any = null;
 // на Android маски не используем: они перерисовывают весь экран в отдельный буфер на каждом кадре прокрутки
 try { MaskedView = Platform.OS === 'android' ? null : require('@react-native-masked-view/masked-view').default; } catch { MaskedView = null; }
+// для верхней панели маска нужна и на Android: там она маленькая (только полоса под логотипом), а внутри — копия фона,
+// которая не прокручивается, поэтому перерисовывать при прокрутке нечего
+let MaskTop: any = null;
+try { MaskTop = require('@react-native-masked-view/masked-view').default; } catch { MaskTop = null; }
 
 // Аватар, который при прокрутке вверх уходит в «остров»: уменьшается, размывается, темнеет и исчезает в нём —
 // как в Telegram. p — прогресс 0…1 (0 — на месте, 1 — уже в острове).
@@ -221,8 +225,8 @@ function TopEdge({ sy, plain }: { sy: any; plain?: boolean }) {
   const padT = useTopPad(); const { width: W, height: H } = useWin(); const T: any = useT();
   const solidH = padT + 56, h = solidH + 70;
   const st = useAnimatedStyle(() => ({ opacity: interpolate(sy.value, [2, 40], [0, 1], 'clamp') }));
-  if (!MaskedView) {
-    // Android (без масок): тот же фон, нарисованный градиентом — цвет в каждой точке как у фона экрана
+  if (!MaskTop) {
+    // без маски (модуль не подключён): тот же фон, нарисованный градиентом — цвет в каждой точке как у фона экрана
     // (переход bgTop → bgBase на 60 % высоты окна), прозрачность: сплошной под логотипом, ниже S-кривая до нуля
     const base = rgbOf(T.bgBase), top = plain ? base : rgbOf(T.bgTop); const n = 16; const colors: string[] = [], locations: number[] = [];
     for (let i = 0; i <= n; i++) {
@@ -238,13 +242,13 @@ function TopEdge({ sy, plain }: { sy: any; plain?: boolean }) {
   const ios = Platform.OS === 'ios';
   return (
     <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: h, zIndex: 2 }, st]}>
-      <MaskedView style={{ flex: 1 }} maskElement={<LinearGradient colors={['#000', ...g.colors] as any} locations={[0, ...g.locations] as any} style={{ flex: 1 }} />}>
+      <MaskTop style={{ flex: 1 }} maskElement={<LinearGradient colors={['#000', ...g.colors] as any} locations={[0, ...g.locations] as any} style={{ flex: 1 }} />}>
         <View style={{ width: W, height: h, overflow: 'hidden' }}>
           {ios && <BlurView intensity={T.dark ? 22 : 18} tint={T.tint} style={StyleSheet.absoluteFill} />}
           {/* копия фона экрана во всю высоту окна, обрезанная сверху, — цвета и свет совпадают с фоном под лентой */}
           <View style={{ position: 'absolute', top: 0, left: 0, width: W, height: H, opacity: ios ? 0.82 : 1 }}><Bg plain={plain} /></View>
         </View>
-      </MaskedView>
+      </MaskTop>
     </Animated.View>
   );
 }
