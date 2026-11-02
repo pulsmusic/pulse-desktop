@@ -8,9 +8,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/icon/splash-dark.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#1a0b33"
+      "image": "./assets/icon/splash-blank.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
     },
     "android": {
       "package": "ru.pulse.app",
@@ -37,9 +37,14 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/icon/splash-dark.png",
-          "resizeMode": "cover",
-          "backgroundColor": "#1a0b33"
+          "image": "./assets/icon/splash-blank.png",
+          "imageWidth": 1,
+          "resizeMode": "contain",
+          "backgroundColor": "#000000",
+          "dark": {
+            "image": "./assets/icon/splash-blank.png",
+            "backgroundColor": "#000000"
+          }
         }
       ],
       "expo-audio",

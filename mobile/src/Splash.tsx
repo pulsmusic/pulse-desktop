@@ -20,6 +20,9 @@ const AT = 520;          // буквы начинают вылетать, ког
 const MIN_MS = 1500;     // раньше этого логотип не улетает — анимация успевает доиграть
 const MAX_MS = 4500;     // а дольше этого не ждём, даже если главная ещё грузится
 let shown = false;       // один раз за запуск приложения
+// системная заставка: в сборке 7 — тёмно-фиолетовая (её цвет мягко уводим в чёрный), с 8-й — уже чёрная
+let NATIVE_BG = '';
+try { NATIVE_BG = String(require('expo-updates').runtimeVersion || '') === '7' ? '#1a0b33' : ''; } catch { NATIVE_BG = ''; }
 
 function Group({ i, w, h, ink, inkOn, p, inkP }: { i: number; w: number; h: number; ink: string; inkOn: boolean; p: any; inkP: any }) {
   const [l, r] = GR[i]; const c = (l + r) / 2; const dx = (SC - c) * w;
@@ -98,7 +101,7 @@ function SplashBody({ onDone }: { onDone: () => void }) {
       <StatusBar barStyle="light-content" />
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }, bgSt]}>
         {/* системная заставка Android — тёмно-фиолетовая; первые доли секунды её цвет мягко уходит в чёрный, без резкой смены */}
-        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#1a0b33' }, nativeSt]} />
+        {!!NATIVE_BG && <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: NATIVE_BG }, nativeSt]} />}
       </Animated.View>
       {!!box && <Animated.View style={[{ position: 'absolute', left: W / 2 - LW / 2, top: H / 2 - LH / 2, width: LW, height: LH }, logoSt]}>
         {GR.map((_, i) => <Group key={i} i={i} w={LW} h={LH} ink={T.ink} inkOn={!T.dark} p={lp[i]} inkP={inkP} />)}
