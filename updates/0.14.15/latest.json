@@ -1,0 +1,13 @@
+{
+  "version": "0.14.15",
+  "date": "2026-11-02",
+  "notes": [
+    "Островок в строке поиска всегда одной высоты и формы — меняется только длина"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.15/pulse-app-0.14.15.zip",
+  "sha256": "6e2bda14c05c7ce78eeffbe0a54f7068f6ebbcd53a0e3654362bc0bb3082bc02",
+  "size": 694882,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
