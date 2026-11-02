@@ -1,0 +1,13 @@
+{
+  "version": "0.15.12",
+  "date": "2026-11-02",
+  "notes": [
+    "Анимация запуска стала короче — около секунды"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.12/pulse-app-0.15.12.zip",
+  "sha256": "5b000dcf65f8ddeadbbbc87aabd09ee5544ab45b1dea9cd9a19977fd71adfb9f",
+  "size": 605846,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
