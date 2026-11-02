@@ -2745,7 +2745,7 @@ function TabDock({ tab, onTab }: { tab: string; onTab: (k: any) => void }) {
   const pill = useAnimatedStyle(() => ({ transform: [{ translateX: px.value * tw }] }), [tw]);
   const abs = StyleSheet.absoluteFill;
   return (
-    <View style={{ position: 'absolute', left: 16, right: 16, bottom: DOCK_B, height: TAB_H, zIndex: 30 }}>
+    <View style={{ position: 'absolute', left: 16, right: 16, bottom: DOCK_B, height: TAB_H, zIndex: 30, borderRadius: TAB_H / 2, backgroundColor: (T as any).dark ? ((T as any).black ? '#141416' : '#1d1c23') : '#ffffff', elevation: (T as any).dark ? 0 : 3 }}>
       <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 6, top: 6, width: tw, height: TAB_H - 12, borderRadius: (TAB_H - 12) / 2, overflow: 'hidden', backgroundColor: (T as any).accentPill }, pill]}>
         {/* двухцветный вариант — пилюля переливается из первого цвета во второй */}
         {(T as any).duo && <LinearGradient colors={(T as any).tri ? [(T as any).accentPillA, (T as any).accentPillB, (T as any).accentPillC] : [(T as any).accentPillA, (T as any).accentPillB]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />}
@@ -2789,19 +2789,8 @@ function ShellMain() {
   useUpdateNag();
   const P = usePlayer(); const T = useT(); const ty = useTy(); const ins = useSafeAreaInsets(); const { width } = useWin();
   // тёмная тема — снизу почти чёрный; светлая — цвет фона (на чёрном не читались бы тёмные подписи вкладок)
-  // переход — ровно в цвет фона страницы (в тёмной теме фон чёрный): если уходить в цвет чуть светлее фона,
-  // внизу появляется видимая «подложка» — полоса светлее остального экрана
-  const dockRgb = hexRgb((T as any).bgBase || ((T as any).dark ? '#000000' : '#ffffff'));
   // мини-плеер — сплошная карточка (не просвечивает): тёмная в тёмной теме, белая в светлой
   const dockMini = (T as any).dark ? ((T as any).black ? '#141416' : '#1d1c23') : '#ffffff';
-  const fadeL = Math.round(width * 0.62);   // зона перехода над мини-плеером (≈ три строки списка)
-  // Кривая без изломов на обоих концах (smootherstep): и в начале, и там, где переход становится сплошным,
-  // наклон нулевой. Если переход упирается в сплошной цвет «под углом», глаз видит на этом месте чёткую линию.
-  const dockFade = useMemo(() => {
-    const colors: string[] = [], locations: number[] = []; const N = 40;
-    for (let i = 0; i <= N; i++) { const x = i / N; const e = x * x * x * (x * (x * 6 - 15) + 10); colors.push(`rgba(${dockRgb},${e.toFixed(4)})`); locations.push(x); }
-    return { colors, locations };
-  }, [dockRgb]);
   const padT = useTopPad(); const [addFor, setAddFor] = useState<Track | null>(null); const [dir, setDir] = useState(1);
   const bgP = useSharedValue(0);   // насколько раскрыт большой плеер (0…1) — приложение под ним уходит вглубь
   const deepV = useSharedValue(0);   // 1 — плеер раскрыт полностью: приложение под ним можно не рисовать (пока плеер не тянут вниз)
@@ -2920,12 +2909,6 @@ function ShellMain() {
         </GestureDetector>
       )}
 
-      {/* нижний бар без панели: экран снизу мягко уходит в тёмное, вкладки и мини-плеер лежат прямо на нём */}
-      {/* переход над мини-плеером (40 точек, без изломов), ниже — сплошной цвет фона */}
-      {!quizOn && !aiOn && <Animated.View pointerEvents="none" entering={FadeIn.duration(400)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 29 }}>
-        <LinearGradient colors={dockFade.colors as any} locations={dockFade.locations as any} style={{ width: '100%', height: fadeL }} />
-        <View style={{ height: DOCK_B + TAB_H + (P.cur ? 8 + MINI_H : 0), backgroundColor: `rgb(${dockRgb})` }} />
-      </Animated.View>}
       {/* во время квиза меню и мини-плеер прячутся — квиз во весь экран */}
       {!quizOn && !aiOn && <Animated.View entering={rise(40, 16, 440)} exiting={FadeOut.duration(200).easing(EASE_IO)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, top: 0, zIndex: 30 }} pointerEvents="box-none"><TabDock tab={tab} onTab={goTab} /></Animated.View>}
 
