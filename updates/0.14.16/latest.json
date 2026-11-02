@@ -1,0 +1,14 @@
+{
+  "version": "0.14.16",
+  "date": "2026-11-02",
+  "notes": [
+    "У островка в строке поиска убрана обводка",
+    "Содержимое островка теперь сменяется мягким растворением"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.16/pulse-app-0.14.16.zip",
+  "sha256": "d6666f26efe8170a3c1f6c30f99eed5421ffa1d15f30446a7ba0840f55a8b1ec",
+  "size": 694749,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
