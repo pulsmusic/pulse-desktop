@@ -1500,7 +1500,7 @@ function HeroLayerBg({ b, sy }: { b: { u: string; end: number; onDark: boolean; 
 // взятый из самой обложки. На этом цвете — название и кнопки, ниже цвет так же плавно уходит в фон темы.
 function CoverBleed({ u, tint, end, top }: { u: string; tint: string; end: number; top: number }) {
   const { width: W } = useWin();
-  const solidH = Math.max(0, end - W); const FADE = 220;
+  const solidH = Math.max(0, end - W); const FADE = 360;
   const over = smooth(tint, 0, 1, 0, 1, 12); const out = smooth(tint, 1, 0, 0, 1, 12); const dim = smooth('0,0,0', 0.38, 0, 0, 1, 8);
   return (
     <View style={{ position: 'absolute', top: -top, left: 0, right: 0 }}>
@@ -1508,7 +1508,7 @@ function CoverBleed({ u, tint, end, top }: { u: string; tint: string; end: numbe
         <Animated.View entering={FadeIn.duration(500).easing(EASE_OUT)} style={StyleSheet.absoluteFill}><Pic uri={api.hiArt(u)} style={{ width: W, height: W }} /></Animated.View>
         {/* верх чуть темнее — белый логотип и кнопка «назад» читаются на любой обложке */}
         <LinearGradient colors={dim.colors as any} locations={dim.locations as any} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: top + 40 }} />
-        <LinearGradient colors={over.colors as any} locations={over.locations as any} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: W * 0.5 }} />
+        <LinearGradient colors={over.colors as any} locations={over.locations as any} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: W * 0.62 }} />
       </View>
       <View style={{ height: solidH, backgroundColor: `rgb(${tint})` }} />
       <LinearGradient colors={out.colors as any} locations={out.locations as any} style={{ height: FADE }} />
@@ -1638,7 +1638,8 @@ function Album({ id, open }: any) {
   const { width: W } = useWin(); const top = useTopPad() + 56;
   const cover = r.v?.info?.artworkUrl100 as string | undefined;
   // цвет из обложки обычно готов за доли секунды; не пришёл за 1,2 с — нейтральный тёмный (белый текст не окажется на белом)
-  const tint0 = useCoverTint(cover); const [fb, setFb] = useState(false);
+  const [tint0, setTint0] = useState(''); useEffect(() => { if (!cover) return; let ok = true; api.coverTintVivid(cover).then((x) => ok && x && setTint0(x)); return () => { ok = false; }; }, [cover]);
+  const [fb, setFb] = useState(false);
   useEffect(() => { const tm = setTimeout(() => setFb(true), 1200); return () => clearTimeout(tm); }, []);
   const tint = tint0 || (fb || (r.v && !cover) ? '40,40,48' : '');
   // цвет из обложки тёмный (×0,42), поэтому текст и логотип на нём — белые в обеих темах

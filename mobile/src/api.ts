@@ -416,19 +416,40 @@ export function imageTone(u?: string): Promise<number | null> {
 // Цвет низа картинки (для подписей поверх обложки, как на ПК): средний цвет нижней половины, затемнённый (×0,42),
 // чтобы белый текст читался. Строка «r,g,b» или '' (не удалось).
 const tints = new Map<string, Promise<string>>();
-export function coverTint(u?: string): Promise<string> {
-  if (!u || !jpeg) return Promise.resolve('');
+// Средний цвет нижней части обложки (r, g, b 0…255). Запоминается — одну обложку не скачиваем дважды.
+const avgs = new Map<string, Promise<number[] | null>>();
+function coverAvg(u?: string, from = 0.5): Promise<number[] | null> {
+  if (!u || !jpeg) return Promise.resolve(null);
   const url = u.replace(/\d+x\d+(bb)?(-\d+)?(?=\.\w+$)/, '60x60bb').replace(/\/\d+x\d+$/, '/100x100');
-  if (!tints.has(url)) { capped(tints, 200); tints.set(url, (async () => {
+  const k = url + '|' + from;
+  if (!avgs.has(k)) { capped(avgs, 200); avgs.set(k, (async () => {
     try {
       const buf = await (await fetch(url)).arrayBuffer();
       const img: any = jpeg.decode(new Uint8Array(buf), { useTArray: true, formatAsRGBA: true });
       const d = img.data as Uint8Array, w = img.width, h = img.height; let r = 0, g = 0, b = 0, n = 0;
-      for (let y = Math.floor(h / 2); y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
-      return n ? [r, g, b].map((v) => Math.round((v / n) * 0.42)).join(',') : '';
-    } catch { tints.delete(url); return ''; }
+      for (let y = Math.floor(h * from); y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+      return n ? [r / n, g / n, b / n] : null;
+    } catch { avgs.delete(k); return null; }
   })()); }
-  return tints.get(url)!;
+  return avgs.get(k)!;
+}
+// тёмный оттенок обложки (подложка карточек подборок)
+export function coverTint(u?: string): Promise<string> {
+  return coverAvg(u).then((c) => (c ? c.map((v) => Math.round(v * 0.42)).join(',') : ''));
+}
+// Насыщенный тёмный цвет обложки — в него обложка альбома перетекает снизу (как в Apple Music): тот же оттенок,
+// но сочнее и темнее, чтобы на нём читался белый текст. Серые обложки остаются серыми (без выдуманного цвета).
+export function coverTintVivid(u?: string): Promise<string> {
+  return coverAvg(u, 0.66).then((c) => {
+    if (!c) return '';
+    const [r, g, b] = c.map((v) => v / 255); const mx = Math.max(r, g, b), mn = Math.min(r, g, b); const l0 = (mx + mn) / 2; const dl = mx - mn;
+    let h = 0; const s0 = dl ? dl / (1 - Math.abs(2 * l0 - 1)) : 0;
+    if (dl) h = mx === r ? ((g - b) / dl) % 6 : mx === g ? (b - r) / dl + 2 : (r - g) / dl + 4; h = (h * 60 + 360) % 360;
+    const s = s0 < 0.08 ? s0 : Math.min(0.85, s0 * 1.35 + 0.08), l = Math.max(0.14, Math.min(0.3, l0 * 0.55));
+    const C = (1 - Math.abs(2 * l - 1)) * s, X = C * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - C / 2;
+    const [a1, a2, a3] = h < 60 ? [C, X, 0] : h < 120 ? [X, C, 0] : h < 180 ? [0, C, X] : h < 240 ? [0, X, C] : h < 300 ? [X, 0, C] : [C, 0, X];
+    return [a1, a2, a3].map((v) => Math.round((v + m) * 255)).join(',');
+  });
 }
 
 // Основной цвет обложки для ползунка. Возвращает тон в HSL (0..1) или null, если обложка почти без цвета
