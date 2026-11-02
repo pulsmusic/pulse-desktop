@@ -1,0 +1,13 @@
+{
+  "version": "0.15.9",
+  "date": "2026-11-02",
+  "notes": [
+    "Анимация запуска теперь видна целиком"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.9/pulse-app-0.15.9.zip",
+  "sha256": "e5b46febcf6185909689613aa5178a19731ae7804d7c6f188a6e0a097160ac1c",
+  "size": 605624,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
