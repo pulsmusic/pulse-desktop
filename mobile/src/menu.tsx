@@ -9,6 +9,11 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useT, hap } from './ui';
+import { PcIcon } from './PcIcons';
+
+// пункты меню и значки диалогов — теми же иконками, что на ПК; где своей на ПК нет — системная
+const PC: Record<string, any> = { 'trash-outline': 'trash', 'create-outline': 'pencil', 'camera-outline': 'camera', sparkles: 'spark', 'person-outline': 'user', 'download-outline': 'download', 'add-circle-outline': 'plus', add: 'plus', 'heart-outline': 'heartO', heart: 'heart', 'time-outline': 'clock', 'moon-outline': 'moon', 'settings-outline': 'gear', 'list-outline': 'queue', 'lock-closed-outline': 'lock', 'musical-notes-outline': 'notes', 'search-outline': 'search' };
+const Icon = ({ n, s, c }: { n: string; s: number; c: string }) => (PC[n] ? <PcIcon n={PC[n]} s={s} c={c} /> : <Ionicons name={n as any} size={s} color={c} />);
 
 export type MItem = { text: string; icon?: string; onPress: () => void; danger?: boolean };
 // окно-вопрос: значок, заголовок, текст, список (что нового), две кнопки-капсулы рядом
@@ -44,7 +49,7 @@ export function MenuHost() {
   const Row = ({ it, cancel }: { it?: MItem; cancel?: boolean }) => (
     <Pressable onPress={() => { hap('light'); close(cancel ? undefined : it!.onPress); }}
       style={({ pressed }) => ({ height: 48, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, backgroundColor: pressed ? line : 'transparent', justifyContent: cancel ? 'center' : 'flex-start' })}>
-      {!cancel && !!it!.icon && <Ionicons name={it!.icon as any} size={20} color={it!.danger ? '#ff5a5f' : ink} />}
+      {!cancel && !!it!.icon && <Icon n={it!.icon!} s={20} c={it!.danger ? '#ff5a5f' : ink} />}
       <Text style={{ fontSize: 16, fontWeight: cancel ? '600' : '500', color: cancel ? (T.accentText || T.accent) : it!.danger ? '#ff5a5f' : ink }}>{cancel ? 'Отмена' : it!.text}</Text>
     </Pressable>
   );
@@ -77,8 +82,8 @@ function Dialog({ d, T, bg, ink, onPick }: { d: DDlg; T: any; bg: string; ink: s
     <View style={{ borderRadius: 30, backgroundColor: bg, padding: 18, paddingTop: 20, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 24, elevation: 14 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
         {d.danger
-          ? <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,90,95,0.16)', alignItems: 'center', justifyContent: 'center' }}><Ionicons name={(d.icon || 'trash-outline') as any} size={22} color={red} /></View>
-          : <LinearGradient colors={[g1, g2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}><Ionicons name={(d.icon || 'sparkles') as any} size={22} color="#fff" /></LinearGradient>}
+          ? <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,90,95,0.16)', alignItems: 'center', justifyContent: 'center' }}><Icon n={d.icon || 'trash-outline'} s={22} c={red} /></View>
+          : <LinearGradient colors={[g1, g2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}><Icon n={d.icon || 'sparkles'} s={22} c="#fff" /></LinearGradient>}
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 19, fontWeight: '700', color: ink, letterSpacing: -0.2 }}>{d.title}</Text>
           {!!d.sub && <Text style={{ fontSize: 14, color: mut, marginTop: 2 }}>{d.sub}</Text>}

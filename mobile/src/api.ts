@@ -244,10 +244,10 @@ const newCache = new Map<string, any[]>();
 export const clearCache = () => { chartCache.clear(); newCache.clear(); const ks = ['pc:chart:ru', 'pc:new:ru', 'pc:y:chart:ru', 'pc:y:new:ru']; ks.forEach((k) => mem.delete(k)); AsyncStorage.multiRemove(ks).catch(() => {}); };
 export async function chart(cc: string): Promise<Track[]> {
   if (chartCache.has(cc)) return chartCache.get(cc)!;
-  const res = await disk('chart:' + cc, 6 * H, () => chartLoad(cc), (v) => v.length > 0, true); if (res.length) chartCache.set(cc, res); return res;
+  const res = await disk('chart2:' + cc, 6 * H, () => chartLoad(cc), (v) => v.length > 0, true); if (res.length) chartCache.set(cc, res); return res;
 }
 async function chartLoad(cc: string): Promise<Track[]> {
-  if (YB) return L((await yj('/chart?limit=50')).results || []);   // чарт Яндекс Музыки (Россия)
+  if (YB) return L((await yj('/chart?limit=100')).results || []);   // чарт Яндекс Музыки (Россия), топ-100
   let ids: string[] = [];
   try { const d = await j(`https://rss.applemarketingtools.com/api/v2/${cc}/music/most-played/50/songs.json`); ids = d.feed.results.map((x: any) => x.id); } catch {}
   if (!ids.length) return [];
@@ -262,7 +262,18 @@ async function albumLoad(id: number) {
   if (!d || !d.results?.length) d = await j(`${IT}lookup?id=${id}&entity=song&country=US`);
   return { info: alb(d.results[0]), tracks: L(d.results.slice(1)) };
 }
-export function artist(id: number) { return disk('artist:' + id, 24 * H, () => artistLoad(id)); }
+export function artist(id: number) { return disk('artist3:' + id, 24 * H, () => artistLoad(id)); }
+// Витрина главной (как на ПК): «Собрано для вас» (персональные плейлисты Яндекса, нужен вход) и «Подборки» редакции
+export type YPl = { uid: string; kind: string; title: string; desc: string; count: number; cover: string; coverBig: string; special?: string };
+export async function landing(): Promise<{ personal: YPl[]; playlists: YPl[] }> {
+  if (!YB) return { personal: [], playlists: [] };
+  const tk = (await ymToken()).slice(-6);
+  return disk('land:' + tk, 1 * H, async () => { const r = await yj('/landing', 12000); return { personal: (r && r.personal) || [], playlists: (r && r.playlists) || [] }; }, (v) => v.personal.length + v.playlists.length > 0, true);
+}
+// треки плейлиста Яндекса
+export function yplaylist(uid: string, kind: string): Promise<{ info: YPl | null; tracks: Track[] }> {
+  return disk('ypl:' + uid + ':' + kind, 1 * H, async () => { const r = await yj('/playlist/' + encodeURIComponent(uid) + '/' + encodeURIComponent(kind), 12000); return { info: r && r.info, tracks: L((r && r.results) || []) }; }, (v) => v.tracks.length > 0);
+}
 // все песни исполнителя (до 200, популярные — первыми) — для «дальше» после трека со страницы артиста
 export function artistAll(id: number): Promise<Track[]> {
   return disk<Track[]>('artall:' + id, 24 * H, async () => {
@@ -272,7 +283,7 @@ export function artistAll(id: number): Promise<Track[]> {
   }, (v) => v.length > 0).catch(() => []);
 }
 async function artistLoad(id: number) {
-  if (YB) { const d = await yj('/artist/' + id); return { info: d.info, albums: (d.albums || []).map(alb).sort((a: any, b: any) => String(b.releaseDate || '').localeCompare(String(a.releaseDate || ''))), tracks: L(d.songs || []) }; }
+  if (YB) { const d = await yj('/artist/' + id); return { info: d.info, albums: (d.albums || []).map(alb).sort((a: any, b: any) => String(b.releaseDate || '').localeCompare(String(a.releaseDate || ''))), tracks: L(d.songs || []), similar: (d.simA || []) as any[] }; }
   const al = (c: string) => j(`${IT}lookup?id=${id}&entity=album&limit=80&sort=recent&country=${c}`).catch(() => ({ results: [] }));
   const [s, ru, us] = await Promise.all([j(`${IT}lookup?id=${id}&entity=song&limit=25&country=RU`), al('RU'), al('US')]);
   // альбомы из двух магазинов без повторов, новые — первыми
@@ -282,7 +293,7 @@ async function artistLoad(id: number) {
     seen.add(x.collectionId); albums.push(alb(x));
   }
   albums.sort((a, b) => String(b.releaseDate || '').localeCompare(String(a.releaseDate || '')));
-  return { info: ru.results[0] || us.results[0], albums, tracks: L(s.results.filter((x: any) => x.wrapperType === 'track')) };
+  return { info: ru.results[0] || us.results[0], albums, tracks: L(s.results.filter((x: any) => x.wrapperType === 'track')), similar: [] as any[] };
 }
 
 // Новинки. С Яндексом — свой список новинок (чарт для него не нужен, грузится одновременно с чартом).
@@ -398,6 +409,24 @@ export function imageTone(u?: string): Promise<number | null> {
     } catch { tones.delete(url); return null; }
   })());
   return tones.get(url)!;
+}
+
+// Цвет низа картинки (для подписей поверх обложки, как на ПК): средний цвет нижней половины, затемнённый (×0,42),
+// чтобы белый текст читался. Строка «r,g,b» или '' (не удалось).
+const tints = new Map<string, Promise<string>>();
+export function coverTint(u?: string): Promise<string> {
+  if (!u || !jpeg) return Promise.resolve('');
+  const url = u.replace(/\d+x\d+(bb)?(-\d+)?(?=\.\w+$)/, '60x60bb').replace(/\/\d+x\d+$/, '/100x100');
+  if (!tints.has(url)) { capped(tints, 200); tints.set(url, (async () => {
+    try {
+      const buf = await (await fetch(url)).arrayBuffer();
+      const img: any = jpeg.decode(new Uint8Array(buf), { useTArray: true, formatAsRGBA: true });
+      const d = img.data as Uint8Array, w = img.width, h = img.height; let r = 0, g = 0, b = 0, n = 0;
+      for (let y = Math.floor(h / 2); y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+      return n ? [r, g, b].map((v) => Math.round((v / n) * 0.42)).join(',') : '';
+    } catch { tints.delete(url); return ''; }
+  })()); }
+  return tints.get(url)!;
 }
 
 // Основной цвет обложки для ползунка. Возвращает тон в HSL (0..1) или null, если обложка почти без цвета

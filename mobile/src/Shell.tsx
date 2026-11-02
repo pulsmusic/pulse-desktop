@@ -10,11 +10,16 @@ import * as api from './api';
 import * as upd from './updater';
 import * as ota from './ota';
 import { MenuHost, openMenu, openDialog } from './menu';
+import { useFollow, toggleFollow } from './follow';
+import { useSleep, sleepSet, sleepGet, sleepLabel } from './sleep';
+import { RingDot, MixCard, MixCover, BestCard, BestCover, YplCard, useBestArtists, CARD, tracksWord, useCoverTint } from './Home2';
+import { PcIcon, Verified } from './PcIcons';
+import { heardSeed, markHeard, useHeard } from './heard';
 import { APP_VERSION } from './version';
 import type { Track } from './api';
 // чарт и новинки главной начинают грузиться сразу при запуске, ещё до первого кадра
 api.warmHome();
-import { usePlayer, usePlaying, useProgress, dayKey } from './player';
+import { usePlayer, usePlaying, useProgress, dayKey, useCurId } from './player';
 import type { DayStat } from './player';
 import { DARK, LIGHT, ACCENTS, SOLO, GRADIENTS, second, gradOf, blendHex } from './theme';
 import { Ic, Press, Glass, GlassCard, Cover, Skel, Card, AlbumCard, AlbumRow, MoreCard, Row, ArtistDot, NavBar, Logo, IconBtn, Btn, StatCard, Eq, PIcon, LIcon, StarShape, StarOutline, LStarIcon, LStar, Glow, Matte, Explicit, LogoPill, Marquee, PlayPause, HAS_SVG, SVGLIB, RadialFill, once, GlassBtn, AiIcon, hap, WaterLight, AMB, useAmbient, takeFullOrigin, AmbientDriver, useTy, useWin, BlurView, useT, VisCtx, useVisible, useLater, rise, EASE_OUT, EASE_IO, SHEET } from './ui';
@@ -245,6 +250,8 @@ function SearchBtn({ onPress }: { onPress: () => void }) {
   );
 }
 
+// стрелка «дальше» — та же, что на ПК (back, развёрнутая)
+const Chev = ({ c }: { c: string }) => <View style={{ transform: [{ rotate: '180deg' }] }}><PcIcon n="back" s={17} c={c} /></View>;
 const Sec = ({ children, right }: { children: string; right?: React.ReactNode }) => {
   const ty = useTy();
   return (
@@ -271,19 +278,19 @@ const Strip = ({ title, data, err, empty, open }: { title: string; data: Track[]
   );
 };
 
-const AlbumStrip = ({ title, albums, open, sub }: { title: string; albums: any[]; open: (s: any) => void; sub?: string }) => (
+const AlbumStrip = ({ title, albums, open, sub, max = 5 }: { title: string; albums: any[]; open: (s: any) => void; sub?: string; max?: number }) => (
   <View>
     <Sec>{title}</Sec>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
-      {albums.slice(0, 5).map((x, i) => <AlbumCard key={x.collectionId} x={x} i={i} sub={sub} onPress={() => open({ k: 'album', id: x.collectionId })} />)}
-      {albums.length > 5 && <MoreCard count={albums.length} onPress={() => open({ k: 'albums', title, albums })} />}
+      {albums.slice(0, max).map((x, i) => <AlbumCard key={x.collectionId} x={x} i={i} sub={sub} onPress={() => open({ k: 'album', id: x.collectionId })} />)}
+      {albums.length > max && <MoreCard count={albums.length} onPress={() => open({ k: 'albums', title, albums })} />}
     </ScrollView>
   </View>
 );
 
 // queue — что играть (по умолчанию сам список): на странице артиста видно 5 треков, а играют все его треки;
 // from — откуда включили (для «дальше» после конца очереди)
-const Rows = ({ list, open, noFav, selfId, noCover, queue, from }: { list: Track[]; open: (s: any) => void; noFav?: boolean; selfId?: number; noCover?: boolean; queue?: Track[]; from?: string }) => {
+const Rows = ({ list, open, noFav, selfId, noCover, queue, from, num }: { list: Track[]; open: (s: any) => void; noFav?: boolean; selfId?: number; noCover?: boolean; queue?: Track[]; from?: string; num?: boolean }) => {
   const P = usePlayer(); const addTo = useContext(AddCtx);
   // строки запоминаются (memo) — поэтому нажатие берёт актуальный список через ref, а не тот, что был при первой отрисовке
   const lr = useRef(list); lr.current = list; const qr = useRef(queue); qr.current = queue; const fr = useRef(from); fr.current = from;
@@ -291,7 +298,7 @@ const Rows = ({ list, open, noFav, selfId, noCover, queue, from }: { list: Track
   const more = useContext(MoreCtx); const [lim, setLim] = useState(ROWS_STEP);
   useEffect(() => (more ? more.sub(() => setLim((l) => (l < lr.current.length ? l + ROWS_STEP : l))) : undefined), [more]);
   const shown = more && list.length > lim ? list.slice(0, lim) : list;
-  return <>{shown.map((t, i) => <Row key={t.id + i} t={t} i={i} noFav={noFav} noCover={noCover} fav={P.isFav(t)} onFav={() => P.toggleFav(t)} onPress={() => play(i)} onLongPress={() => addTo(t)}
+  return <>{shown.map((t, i) => <Row key={t.id + i} t={t} i={i} num={num} noFav={noFav} noCover={noCover} fav={P.isFav(t)} onFav={() => P.toggleFav(t)} onPress={() => play(i)} onLongPress={() => addTo(t)}
     onArtist={() => (t.artistId && t.artistId !== selfId ? open({ k: 'artist', id: t.artistId, name: t.artist }) : null)} />)}</>;
 };
 
@@ -306,51 +313,151 @@ function Avatar({ size, bare }: { size: number; bare?: boolean }) {
 
 const Title = ({ children }: { children: string }) => { const ty = useTy(); return <Text style={[ty.largeTitle, { marginHorizontal: 16, marginTop: 8 }]}>{children}</Text>; };
 
-function Home({ open }: any) {
-  const P = usePlayer(); const ty = useTy(); const T = useT();
+// ссылка справа от заголовка раздела («Весь чарт», «Смотреть все», «Мой пульс →») — как на ПК
+const SecLink = ({ children, onPress }: { children: string; onPress: () => void }) => { const T: any = useT(); const ty = useTy(); return <Pressable hitSlop={10} onPress={onPress}><Text style={[ty.subhead, { color: T.accentText, fontWeight: '600' }]}>{children}</Text></Pressable>; };
+const HScroll = ({ children }: { children: React.ReactNode }) => <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>{children}</ScrollView>;
+
+// Главная — как в версии для ПК: «Недавние» с кольцами, чарт строками, «Любимое», «Собрано для вас»,
+// «Лучшее артистов», «Новые релизы», «Ваши плейлисты», «Подборки». Все обложки в лентах — CARD × CARD.
+function Home({ open, onPulse }: any) {
+  const P = usePlayer(); const ty = useTy(); const T = useT(); const { width: W } = useWin();
   const [rk, setRk] = useState(0); const [rf, setRf] = useState(false);
   const ru = useAsync(() => api.chart('ru'), [rk]);
   // с Яндексом новинки не зависят от чарта — грузятся одновременно с ним
   const nw = useAsync(() => (api.YB ? api.newReleases('ru', []) : ru.v ? api.newReleases('ru', ru.v) : Promise.resolve(null)), api.YB ? [rk] : [ru.v]);
+  const land = useAsync(() => api.landing(), [rk]);
   const refresh = () => { setRf(true); api.clearCache(); setRk((k) => k + 1); setTimeout(() => setRf(false), 900); };
-  // один артист — один кружок: сравниваем по основному имени (без feat./соавторов) и по id.
-  // Считаем только когда меняется история прослушивания, а не при каждой перерисовке.
+  // один артист — один кружок: сравниваем по основному имени (без feat./соавторов) и по id
   const arts = useMemo(() => {
     const seenN = new Set<string>(); const seenI = new Set<number>(); const out: { name: string; id?: number; cover: string }[] = [];
-    for (const t of P.recent as Track[]) {
+    for (const t of [...(P.recent as Track[]), ...((ru.v || []) as Track[])]) {
       const name = api.baseArtist(t.artist); const k = name.toLowerCase().replace(/ё/g, 'е');
       if (!k || seenN.has(k) || (t.artistId && seenI.has(t.artistId))) continue;
       seenN.add(k); if (t.artistId) seenI.add(t.artistId); out.push({ name, id: t.artistId, cover: t.cover });
       if (out.length >= 12) break;
     }
     return out;
-  }, [P.recent]);
+  }, [P.recent, ru.v]);
+  const best = useBestArtists(P.favs as Track[], P.recent as Track[], ru.v);
+  const favs = P.favs as Track[];
+  const gw = Math.floor((W - 32 - 2 * 12) / 3);   // «Любимое»: три в ряд
+  const lists = [...(P.lists as Playlist[])].sort((a, b) => b.at - a.at);
+  const L = land.v || { personal: [], playlists: [] };
   return (
     <ScrollView screen refreshControl={<RefreshControl refreshing={rf} onRefresh={refresh} tintColor={T.muted} progressViewOffset={100} />}>
-      {arts.length > 0 && (
-        <>
-          <Sec>Недавние</Sec>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 14 }}>
-            {arts.map((a, i) => (
-              <Animated.View key={a.name} entering={rise(Math.min(i, 8) * 40)}>
-                <Press onPress={() => (a.id ? open({ k: 'artist', id: a.id, name: a.name }) : undefined)} style={{ width: 64, alignItems: 'center' }}>
-                  <ArtistDot name={a.name} id={a.id} fallback={a.cover} size={AV} />
-                  <Text numberOfLines={1} style={[ty.footnote, { marginTop: 7, color: T.ink2, fontWeight: '600', fontSize: 12 }]}>{a.name}</Text>
-                </Press>
-              </Animated.View>
-            ))}
-          </ScrollView>
-        </>
-      )}
-      <Strip title="Чарты" data={ru.v} err={ru.err} open={open} />
-      {!!nw.v && nw.v.length > 0 ? <AlbumStrip title="Новинки" albums={nw.v} open={open} /> : !nw.v && !nw.err && (api.YB || !!ru.v) ? <View><Sec>Новинки</Sec><Skel /></View> : null}
-      <Strip title="Любимое" data={P.favs} empty="Нажмите на сердечко у любого трека" open={open} />
+      {arts.length > 0 && (<>
+        <Sec right={onPulse ? <SecLink onPress={onPulse}>Мой пульс →</SecLink> : undefined}>{P.recent.length ? 'Недавние' : 'Артисты'}</Sec>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, gap: 4 }}>
+          {arts.map((a, i) => <RingDot key={a.name} a={a} i={i} onPress={() => (a.id ? open({ k: 'artist', id: a.id, name: a.name }) : undefined)} />)}
+        </ScrollView>
+      </>)}
+      <Sec right={ru.v && ru.v.length ? <SecLink onPress={() => open({ k: 'chart' })}>Весь чарт</SecLink> : undefined}>Чарты</Sec>
+      {!ru.v && !ru.err ? <Skel /> : ru.err ? <Hint>Не удалось загрузить</Hint> : <Rows list={ru.v!.slice(0, 5)} queue={ru.v!} from="chart" open={open} num noFav />}
+      <Sec right={favs.length ? <SecLink onPress={() => open({ k: 'favs' })}>Смотреть все</SecLink> : undefined}>Любимое</Sec>
+      {favs.length ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 16 }}>
+          {favs.slice(0, 6).map((t, i) => (
+            <Animated.View key={t.id} entering={rise(Math.min(i, 8) * 40)}>
+              <Press onPress={() => P.go(favs, i, 'likes')} style={{ width: gw }}>
+                <View style={{ width: gw, height: gw, borderRadius: 22, overflow: 'hidden', backgroundColor: T.ph, marginBottom: 6 }}><Pic uri={api.artPx(t.cover, gw)} style={{ width: gw, height: gw }} /></View>
+                <Text numberOfLines={1} style={[ty.miniTitle, { fontSize: 13 }]}>{t.title}</Text>
+                <Text numberOfLines={1} style={[ty.footnote, { fontSize: 12 }]}>{t.artist}</Text>
+              </Press>
+            </Animated.View>
+          ))}
+        </View>
+      ) : <Hint>Ставьте ♥ трекам — они появятся здесь</Hint>}
+      {(L.personal.length > 0 || (!land.v && !land.err && api.YB)) && (<>
+        <Sec>Собрано для вас</Sec>
+        {!land.v ? <Skel /> : <HScroll>{L.personal.map((p, i) => <MixCard key={p.uid + p.kind} p={p} i={i} onOpen={() => open({ k: 'coll', type: 'ypl', p })} onPlay={(l) => P.go(l, 0, 'ypl:' + p.uid + ':' + p.kind)} />)}</HScroll>}
+      </>)}
+      {best.length > 0 && (<>
+        <Sec>Лучшее артистов</Sec>
+        <HScroll>{best.map((a, i) => <BestCard key={a.id} a={a} i={i} onOpen={(ph) => open({ k: 'coll', type: 'best', a, photo: ph })} onPlay={(l) => P.go(l, 0, 'artist:' + a.id)} />)}</HScroll>
+      </>)}
+      {!!nw.v && nw.v.length > 0 ? <AlbumStrip title="Новые релизы" albums={nw.v} open={open} max={10} /> : !nw.v && !nw.err && (api.YB || !!ru.v) ? <View><Sec>Новые релизы</Sec><Skel /></View> : null}
+      {lists.length > 0 && (<>
+        <Sec>Ваши плейлисты</Sec>
+        <HScroll>{lists.map((pl, i) => (
+          <Animated.View key={pl.id} entering={rise(Math.min(i, 8) * 45)}>
+            <Press onPress={() => open({ k: 'playlist', id: pl.id })} style={{ width: CARD }}>
+              <View style={{ marginBottom: 8 }}><PlCover pl={pl} size={CARD} /></View>
+              <Text numberOfLines={1} style={ty.miniTitle}>{pl.name}</Text>
+              <Text numberOfLines={1} style={ty.footnote}>{tracksWord(pl.tracks.length)}</Text>
+            </Press>
+          </Animated.View>
+        ))}</HScroll>
+      </>)}
+      {L.playlists.length > 0 && (<>
+        <Sec>Подборки</Sec>
+        <HScroll>{L.playlists.slice(0, 16).map((p, i) => <YplCard key={p.uid + p.kind} p={p} i={i} onOpen={() => open({ k: 'coll', type: 'ypl', p, plain: true })} />)}</HScroll>
+      </>)}
       <View style={{ alignItems: 'center', marginTop: 34 }}>
         <Glass radius={999} style={{ paddingHorizontal: 13, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 7 }}>
           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#ffb020' }} /><Text style={[ty.caption, { color: T.ink }]}>пульс · альфа {APP_VERSION}{ota.otaLabel() ? ' · ' + ota.otaLabel() : ''}</Text>
         </Glass>
-        <Text style={[ty.caption, { fontWeight: '400', textAlign: 'center', maxWidth: 290, marginTop: 10, lineHeight: 16 }]}>Приложение находится в разработке. Возможны баги, недоработки и внезапные изменения — мы уже над этим работаем. Спасибо, что вы с нами!</Text>
+        <Text style={[ty.caption, { fontWeight: '400', textAlign: 'center', maxWidth: 290, marginTop: 10, lineHeight: 16 }]}>Приложение находится в разработке. Возможны баги, недоработки и внезапные изменения.</Text>
       </View>
+    </ScrollView>
+  );
+}
+
+// «Весь чарт» — как на ПК: подпись «ЧАРТ · РОССИЯ», заголовок, «Перемешать» и «Слушать», все треки с номерами
+function ChartScreen({ open }: any) {
+  const P = usePlayer(); const ty = useTy(); const T: any = useT();
+  const r = useAsync(() => api.chart('ru'), []);
+  const l = (r.v || []) as Track[];
+  return (
+    <ScrollView screen>
+      <View style={{ marginHorizontal: 16, marginTop: 8 }}>
+        <Text style={[ty.caption, { letterSpacing: 1.2, fontWeight: '700' }]}>ЧАРТ · РОССИЯ</Text>
+        <Text style={[ty.largeTitle, { marginTop: 2 }]}>Топ-{l.length || 100}</Text>
+        <Text style={[ty.subhead, { marginTop: 2 }]}>обновляется каждый день</Text>
+      </View>
+      <PlayBtns list={l} from="chart" />
+      {!r.v && !r.err ? <RowSkel n={10} /> : r.err ? <Hint>Не удалось загрузить</Hint> : <Rows list={l} from="chart" open={open} num noFav />}
+    </ScrollView>
+  );
+}
+// «Перемешать» и «Слушать» — капсулы 52 рядом (как на ПК)
+// «N треков · 1 ч 12 мин» — как в шапке плейлиста и альбома на ПК
+function listMeta(list: Track[]) {
+  const sec = list.reduce((s, x) => s + (x.dur || 0), 0); const m = Math.round(sec / 60);
+  const d = !m ? '' : m < 60 ? `${m} мин` : `${Math.floor(m / 60)} ч${m % 60 ? ` ${m % 60} мин` : ''}`;
+  return [plural(list.length, ['трек', 'трека', 'треков']), d].filter(Boolean).join(' · ');
+}
+function PlayBtns({ list, from, inv, mt = 18 }: { list: Track[]; from: string; inv?: boolean; mt?: number }) {
+  const P = usePlayer(); const T: any = useT();
+  const shuffle = () => { if (!list.length) return; const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } P.go(a, 0, from); };
+  return (
+    <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginTop: mt, marginBottom: 8 }}>
+      <Btn kind="secondary" icon="shuffle" label="Перемешать" inv={inv} onPress={shuffle} />
+      <Btn kind="primary" icon="play" label="Слушать" onPress={() => list.length && P.go(list, 0, from)} />
+    </View>
+  );
+}
+// Подборка: плейлист Яндекса («Собрано для вас», «Подборки») или «Лучшее» артиста — большая обложка как на главной
+function CollScreen({ s, open }: any) {
+  const ty = useTy(); const { width: W } = useWin();
+  const isBest = s.type === 'best';
+  const r = useAsync(() => (isBest ? api.artist(s.a.id).then((x: any) => ({ info: null, tracks: (x.tracks || []).slice(0, 30) })) : api.yplaylist(s.p.uid, s.p.kind)), [isBest ? s.a.id : s.p.uid + s.p.kind]);
+  const l = ((r.v && r.v.tracks) || []) as Track[];
+  const dur = l.reduce((a, t) => a + (t.dur || 0), 0);
+  const size = Math.min(W - 64, 320);
+  const covers = useMemo(() => { const seen = new Set<string>(); const out: string[] = []; for (const t of l) if (t.cover && !seen.has(t.cover)) { seen.add(t.cover); out.push(t.cover); if (out.length >= 12) break; } return out; }, [r.v]);
+  return (
+    <ScrollView screen>
+      <View style={{ alignItems: 'center', marginTop: 4 }}>
+        {isBest ? <BestCover a={s.a} ph={s.photo ? api.artPx(s.photo, size) : ''} stat={l.length ? { n: l.length, dur } : null} size={size} big />
+          : s.plain ? <View style={{ width: size, height: size, borderRadius: 22, overflow: 'hidden' }}><Pic uri={api.artPx(s.p.coverBig || s.p.cover, size)} style={{ width: size, height: size }} /></View>
+          : <MixCover p={s.p} covers={covers} n={l.length || undefined} dur={dur} size={size} big />}
+      </View>
+      {(s.plain || !isBest) && s.plain && <View style={{ marginHorizontal: 16, marginTop: 16, alignItems: 'center' }}>
+        <Text style={[ty.title2, { textAlign: 'center' }]}>{s.p.title}</Text>
+        {!!s.p.desc && <Text style={[ty.subhead, { textAlign: 'center', marginTop: 4 }]} numberOfLines={3}>{s.p.desc}</Text>}
+      </View>}
+      <PlayBtns list={l} from={isBest ? 'artist:' + s.a.id : 'ypl:' + s.p.uid + ':' + s.p.kind} />
+      {!r.v && !r.err ? <RowSkel n={8} /> : r.err ? <Hint>Не удалось загрузить</Hint> : <Rows list={l} from={isBest ? 'artist:' + s.a.id : 'ypl'} open={open} num />}
     </ScrollView>
   );
 }
@@ -476,6 +583,12 @@ function rankTracks(list: Track[], q: string[], ownIds: Set<string>, fresh: bool
 // Поиск в стиле Spotify: результаты обновляются прямо во время ввода (без «Найти»), сверху — подходящие прошлые запросы,
 // треки из вашей музыки и ваши плейлисты появляются мгновенно, ответ сервиса — через долю секунды.
 // История, фильтры-чипы и «Лучший результат» — прежние.
+// «Артист · 13 из 21 прослушано» — как у колец «Недавних» на главной
+function BestSub({ id }: { id: number }) {
+  const ty = useTy(); const n = useHeard(id); const [all, setAll] = useState(0);
+  useEffect(() => { if (!n) return; let ok = true; api.artist(id).then((v: any) => ok && setAll((v?.info?.counts?.tracks) || 0)).catch(() => {}); return () => { ok = false; }; }, [id, n > 0]);
+  return <Text numberOfLines={1} style={[ty.subhead, { marginTop: 4 }]}>{n > 0 && all > 0 ? `Артист · ${n} из ${all} прослушано` : 'Артист'}</Text>;
+}
 function Search({ open, auto }: any) {
   const ty = useTy(); const T = useT(); const P = usePlayer();
   // открыли кнопкой с главной — клавиатура появляется, когда экран уже въехал
@@ -516,7 +629,7 @@ function Search({ open, auto }: any) {
   const remember = (x: string) => { x = x.trim(); if (!x) return; const h = [x, ...hist.filter((y) => norm(y) !== norm(x))].slice(0, 8); setHist(h); AsyncStorage.setItem('pulse_search', JSON.stringify(h)).catch(() => {}); };
   const go = (st: any) => { remember(q); open(st); };
   const clear = () => { setHist([]); AsyncStorage.removeItem('pulse_search').catch(() => {}); };
-  const chips: [Filt, string][] = [['all', 'Все'], ['tracks', 'Треки'], ['artists', 'Исполнители'], ['albums', 'Альбомы']];
+  const chips: [Filt, string][] = [['all', 'Всё'], ['tracks', 'Треки'], ['artists', 'Артисты'], ['albums', 'Альбомы']];
 
   // ---- подсказки и результаты (пересчитываются только при изменении текста или данных) ----
   // прошлые запросы, похожие на вводимый текст
@@ -585,12 +698,12 @@ function Search({ open, auto }: any) {
     const i = norm(x.t).indexOf(nq); const a = i >= 0 ? i : 0, b = i >= 0 ? i + nq.length : 0;
     return (
       <Press key={'s' + x.t} onPress={() => pick(x.t)} to={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingLeft: 18, paddingRight: 6, height: 52 }}>
-        <Ic n={x.h ? 'time-outline' : 'search'} s={21} c={T.muted} />
+        <PcIcon n={x.h ? 'clock' : 'search'} s={21} c={T.muted} />
         {/* набранная часть — приглушённая, продолжение — яркое */}
         <Text numberOfLines={1} style={[ty.body, { flex: 1, color: T.ink }]}>{x.t.slice(0, a)}<Text style={{ color: T.muted }}>{x.t.slice(a, b)}</Text>{x.t.slice(b)}</Text>
         {/* стрелка — подставить текст в поле и дописать дальше */}
         <Pressable hitSlop={6} onPress={() => fill(x.t)} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="arrow-up" size={20} color={T.muted} style={{ transform: [{ rotate: '-45deg' }] }} />
+          <View style={{ transform: [{ rotate: '45deg' }] }}><PcIcon n="arrowL" s={20} c={T.muted} /></View>
         </Pressable>
       </Press>
     );
@@ -627,15 +740,15 @@ function Search({ open, auto }: any) {
   const nothing = !!R && !res?.v?.part && !R.tracks.length && !R.artists.length && !R.albums.length && !myLists.length;
   const histRow = (h: string, onPress: () => void) => (
     <Press key={h} onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, height: 48 }}>
-      <Ic n="time-outline" s={20} c={T.muted} /><Text numberOfLines={1} style={[ty.body, { flex: 1 }]}>{h}</Text></Press>
+      <PcIcon n="clock" s={20} c={T.muted} /><Text numberOfLines={1} style={[ty.body, { flex: 1 }]}>{h}</Text></Press>
   );
   return (
     <ScrollView screen keyboardShouldPersistTaps="handled">
       {/* поле поиска — капсула (радиус = половина высоты), как все поля и кнопки */}
       <Glass radius={26} style={{ margin: 16, height: 52, flexDirection: 'row', alignItems: 'center', paddingLeft: 18, paddingRight: 4 }}>
-        <Ic n="search" s={20} c={T.muted} />
+        <PcIcon n="search" s={20} c={T.muted} />
         <TextInput keyboardAppearance={T.dark ? 'dark' : 'light'} ref={inp} value={q} onChangeText={setQ} onSubmitEditing={() => remember(q)} placeholder="Трек, исполнитель, альбом" placeholderTextColor={T.muted} style={[ty.body, { flex: 1, height: 52, paddingHorizontal: 10, paddingVertical: 0 }]} returnKeyType="search" autoCorrect={false} />
-        {!!q && <Pressable hitSlop={8} onPress={() => setQ('')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Ic n="close-circle" s={20} c={T.muted} /></Pressable>}
+        {!!q && <Pressable hitSlop={8} onPress={() => setQ('')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><PcIcon n="close" s={18} c={T.muted} /></Pressable>}
       </Glass>
       {!s ? (
         hist.length ? (
@@ -663,13 +776,15 @@ function Search({ open, auto }: any) {
                 <View>
                   <Sec>Лучший результат</Sec>
                   <Press onPress={() => (best.kind === 'artist' ? go({ k: 'artist', id: best.a.artistId, name: best.a.artistName }) : (remember(q), P.go([best.t], 0)))} style={{ marginHorizontal: 16 }}>
-                    <Glass radius={22} style={{ padding: 12 }}>
-                      {best.kind === 'artist' ? <ArtistDot name={best.a.artistName} id={best.a.artistId} fallback={R!.tracks.find((x: Track) => x.artistId === best.a.artistId)?.cover} size={92} /> : <Cover u={best.t.cover} size={92} r={10} />}
-                      <Text numberOfLines={1} style={[ty.title1, { marginTop: 14 }]}>{best.kind === 'artist' ? best.a.artistName : best.t.title}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                        <View style={{ paddingHorizontal: 10, height: 24, borderRadius: 12, backgroundColor: T.glass, borderWidth: 1, borderColor: T.stroke, justifyContent: 'center' }}><Text style={ty.caption}>{best.kind === 'artist' ? 'Исполнитель' : 'Трек'}</Text></View>
-                        <Text numberOfLines={1} style={[ty.subhead, { flex: 1 }]}>{best.kind === 'artist' ? api.genreRu(best.a.primaryGenreName) : best.t.artist}</Text>
+                    <Glass radius={22} style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                      {best.kind === 'artist' ? <ArtistDot name={best.a.artistName} id={best.a.artistId} fallback={R!.tracks.find((x: Track) => x.artistId === best.a.artistId)?.cover} size={88} /> : <Cover u={best.t.cover} size={88} r={8} />}
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text numberOfLines={2} style={[ty.title2, { fontWeight: '700' }]}>{best.kind === 'artist' ? best.a.artistName : best.t.title}</Text>
+                        {best.kind === 'artist' ? <BestSub id={best.a.artistId} /> : <Text numberOfLines={1} style={[ty.subhead, { marginTop: 4 }]}>{`Трек · ${best.t.artist}`}</Text>}
                       </View>
+                      <Press hap="tap" onPress={() => { remember(q); if (best.kind === 'track') P.go([best.t], 0); else { const l = R!.tracks.filter((x: Track) => x.artistId === best.a.artistId); if (l.length) P.go(l, 0); else go({ k: 'artist', id: best.a.artistId, name: best.a.artistName }); } }} style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center' }}>
+                        <PcIcon n="play" s={22} c={T.onPrimary} />
+                      </Press>
                     </Glass>
                   </Press>
                 </View>
@@ -682,7 +797,7 @@ function Search({ open, auto }: any) {
                   <View style={{ flex: 1 }}><Text numberOfLines={1} style={ty.headline}>{x.name}</Text><Text numberOfLines={1} style={[ty.subhead, { marginTop: 2 }]}>{`Плейлист · ${plural(x.n, ['трек', 'трека', 'треков'])}`}</Text></View>
                 </Press>
               ))}
-              {showArtists && !!R && R.artists.length > 0 && <Sec>Исполнители</Sec>}
+              {showArtists && !!R && R.artists.length > 0 && <Sec>Артисты</Sec>}
               {showArtists && !!R && R.artists.slice(0, f === 'all' ? 3 : 15).map((a: any) => <Press key={a.artistId} onPress={() => go({ k: 'artist', id: a.artistId, name: a.artistName })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, paddingHorizontal: 16 }}>
                 <ArtistDot name={a.artistName} id={a.artistId} size={48} />
                 <View style={{ flex: 1 }}><Text numberOfLines={1} style={ty.headline}>{a.artistName}</Text><Text style={[ty.subhead, { marginTop: 2 }]}>{api.genreRu(a.primaryGenreName) || 'Исполнитель'}</Text></View></Press>)}
@@ -763,34 +878,55 @@ function PlCover({ pl, size, r = 22, fav, recent }: { pl?: Playlist; size: numbe
 
 const newListName = (n: number) => (n ? `Новый плейлист ${n + 1}` : 'Новый плейлист');
 
+// «Моя музыка» — как на ПК: сверху две обложки «Любимые треки» и «Недавние» (переключают список ниже),
+// «Мои плейлисты» сеткой (первой — «Новый плейлист»), под ними треки выбранной папки с «Перемешать» и «Слушать».
+// Все обложки — CARD × CARD, как в лентах главной.
 function Library({ open }: any) {
   const P = usePlayer(); const T: any = useT(); const ty = useTy(); const { width: W } = useWin();
-  const cw = Math.floor((W - 32 - 16) / 2);
+  const cw = CARD; const gap = Math.max(12, W - 32 - 2 * cw);
+  const [tab, setTab] = useState<'likes' | 'recent'>('likes'); const fol = useFollow();
   // двойное нажатие на «Новый плейлист» создавало два плейлиста
   const create = () => once(() => { hap('success'); const id = P.createList(newListName(P.lists.length)); open({ k: 'playlist', id, fresh: true }); });
-  const card = (key: string, i: number, cover: React.ReactNode, name: string, meta: string, onPress: () => void) => (
-    <Animated.View key={key} entering={i < 12 ? rise(Math.min(i, 8) * 40) : undefined}>
-      <Press onPress={onPress} style={{ width: cw }}>
-        <View style={{ borderRadius: 22, backgroundColor: T.ph }}>{cover}</View>
-        <Text numberOfLines={1} style={[ty.miniTitle, { marginTop: 8 }]}>{name}</Text>
-        <Text numberOfLines={1} style={ty.footnote}>{meta}</Text>
+  const lists: Playlist[] = useMemo(() => [...P.lists].sort((a, b) => b.at - a.at), [P.lists]);
+  const list = (tab === 'likes' ? P.favs : P.recent) as Track[];
+  const folder = (k: 'likes' | 'recent', i: number) => (
+    <Animated.View key={k} entering={rise(i * 40)}>
+      <Press onPress={() => { hap('select'); setTab(k); }} style={{ width: cw, opacity: tab === k ? 1 : 0.55 }}>
+        <PlCover fav={k === 'likes'} recent={k === 'recent'} size={cw} />
+        <Text numberOfLines={1} style={[ty.miniTitle, { marginTop: 8 }]}>{k === 'likes' ? 'Любимые треки' : 'Недавние'}</Text>
+        <Text numberOfLines={1} style={ty.footnote}>{plural((k === 'likes' ? P.favs : P.recent).length, ['трек', 'трека', 'треков'])}</Text>
       </Press>
     </Animated.View>
   );
-  const lists: Playlist[] = useMemo(() => [...P.lists].sort((a, b) => b.at - a.at), [P.lists]);
   return (
     <ScrollView screen automaticallyAdjustKeyboardInsets>
-      <Sec right={<Text style={[ty.subhead, { color: T.accentText, fontWeight: '600' }]}>{lists.length + 2}</Text>}>Плейлисты</Sec>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 18, paddingHorizontal: 16 }}>
-        {card('new', 0,
-          <View style={{ width: cw, height: cw, borderRadius: 22, borderWidth: 1.5, borderStyle: 'dashed', borderColor: T.dark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)', backgroundColor: T.glass, alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="add" size={28} color={T.onPrimary} /></View>
-            <Text style={[ty.miniTitle]}>Новый плейлист</Text>
-          </View>, ' ', ' ', create)}
-        {card('fav', 1, <PlCover fav size={cw} />, 'Любимое', plural(P.favs.length, ['трек', 'трека', 'треков']), () => open({ k: 'favs' }))}
-        {card('recent', 2, <PlCover recent size={cw} />, 'Недавние', P.recent.length ? plural(P.recent.length, ['трек', 'трека', 'треков']) : 'Пока пусто', () => open({ k: 'recent' }))}
-        {lists.map((pl, i) => <PlCard key={pl.id} pl={pl} i={i + 3} cw={cw} meta={`${P.profile.name} · ${plural(pl.tracks.length, ['трек', 'трека', 'треков'])}`} open={open} />)}
+      <Title>Моя музыка</Title>
+      <View style={{ flexDirection: 'row', columnGap: gap, paddingHorizontal: 16, marginTop: 8 }}>{folder('likes', 0)}{folder('recent', 1)}</View>
+      {fol.length > 0 && <>
+        <Sec>Мои артисты</Sec>
+        <HScroll>{fol.map((a) => (
+          <Press key={a.id} onPress={() => open({ k: 'artist', id: a.id, name: a.name })} style={{ width: 88, alignItems: 'center' }}>
+            <ArtistDot name={a.name} id={a.id} size={88} />
+            <Text numberOfLines={1} style={[ty.miniTitle, { marginTop: 8, textAlign: 'center' }]}>{a.name}</Text>
+          </Press>
+        ))}</HScroll>
+      </>}
+      <Sec right={<Text style={[ty.subhead, { fontWeight: '600' }]}>{lists.length || ''}</Text>}>Мои плейлисты</Sec>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: gap, rowGap: 18, paddingHorizontal: 16 }}>
+        <Animated.View entering={rise(80)}>
+          <Press onPress={create} style={{ width: cw }}>
+            <View style={{ width: cw, height: cw, borderRadius: 22, borderWidth: 1.5, borderStyle: 'dashed', borderColor: T.dark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)', backgroundColor: T.glass, alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center' }}><PcIcon n="plus" s={26} c={T.onPrimary} /></View>
+              <Text style={ty.miniTitle}>Новый плейлист</Text>
+            </View>
+            <Text style={[ty.miniTitle, { marginTop: 8 }]}> </Text><Text style={ty.footnote}> </Text>
+          </Press>
+        </Animated.View>
+        {lists.map((pl, i) => <PlCard key={pl.id} pl={pl} i={i + 3} cw={cw} meta={plural(pl.tracks.length, ['трек', 'трека', 'треков'])} open={open} />)}
       </View>
+      <Sec>{tab === 'likes' ? 'Любимые треки' : 'Недавние'}</Sec>
+      {list.length ? <><PlayBtns list={list} from={tab} /><Rows key={tab} list={list} from={tab} open={open} /></>
+        : <Hint>{tab === 'likes' ? 'Пока пусто. Нажмите ♥ у трека — он появится здесь.' : 'Здесь будут треки, которые вы слушали.'}</Hint>}
     </ScrollView>
   );
 }
@@ -890,7 +1026,6 @@ function PlaylistScreen({ id, fav, recent, fresh, open, back }: any) {
     if (Platform.OS === 'ios') ActionSheetIOS.showActionSheetWithOptions({ title: `Плейлист «${pl.name}»`, options: [...items.map((x) => x[0]), 'Отмена'], cancelButtonIndex: items.length, destructiveButtonIndex: items.length - 1 }, (i) => items[i]?.[1]());
     else { const ic = ['create-outline', 'images-outline', 'camera-outline', ...(pl.cover ? ['color-wand-outline'] : []), 'trash-outline']; openMenu(`Плейлист «${pl.name}»`, items.map(([text, onPress], i) => ({ text, onPress, icon: ic[i], danger: i === items.length - 1 }))); }
   };
-  const mins = Math.max(1, Math.round(tracks.reduce((s, t) => s + (t.dur || 30), 0) / 60));
   return (
     <ScrollView screen keyboardShouldPersistTaps="handled">
       {(T as any).grad ? <RadialFill colors={(T as any).grad} fade strength={T.dark ? 0.85 : 1} cy={0.48} style={{ left: '-30%', right: '-30%', top: -200, bottom: undefined, height: 660 }} />
@@ -913,12 +1048,9 @@ function PlaylistScreen({ id, fav, recent, fresh, open, back }: any) {
             style={[ty.title1, { fontWeight: '700', letterSpacing: -0.4, textAlign: 'center' }]}>{name}</Animated.Text>
         )}
       </View>
-      <Text style={[ty.footnote, { textAlign: 'center' }]}>{[sys ? null : P.profile.name, plural(tracks.length, ['трек', 'трека', 'треков']), tracks.length ? `${mins} мин` : null].filter(Boolean).join(' · ')}</Text>
-      <View style={{ flexDirection: 'row', gap: 12, marginHorizontal: 16, marginTop: 20, opacity: tracks.length ? 1 : 0.45 }}>
-        <Btn label="Слушать" icon="play" onPress={() => tracks.length && P.go(tracks, 0)} />
-        <Btn label="Перемешать" icon="shuffle" kind="secondary" onPress={() => tracks.length && P.go(shuffled(tracks), 0)} />
-      </View>
-      <View style={{ height: 18 }} />
+      <Text style={[ty.footnote, { textAlign: 'center' }]}>{[sys ? null : P.profile.name, listMeta(tracks)].filter(Boolean).join(' · ')}</Text>
+      <View style={{ opacity: tracks.length ? 1 : 0.45 }}><PlayBtns list={tracks} from={fav ? 'likes' : recent ? 'recent' : 'pl:' + id} mt={20} /></View>
+      <View style={{ height: 10 }} />
       {tracks.length ? (settled ? <Rows list={tracks} open={open} /> : <View style={{ height: tracks.length * 64 }} />) : <Hint center>{fav ? 'Нажмите на сердечко у любого трека' : recent ? 'Здесь появятся треки, которые вы слушали' : 'Добавляйте треки долгим нажатием на любой трек'}</Hint>}
     </ScrollView>
   );
@@ -1291,13 +1423,32 @@ function HeroLayer({ children, onBack }: any) {
 // Цветной верх страницы (размытое фото) — слой позади прокрутки. Двигается вместе со страницей,
 // а при оттягивании вниз мягко растягивается. Содержимое над ним у верха тает (FadeTop), а сам он — нет:
 // область под логотипом полностью прозрачная, видно настоящий цвет фото, переход нигде не обрывается.
-function HeroLayerBg({ b, sy }: { b: { u: string; end: number; onDark: boolean }; sy: any }) {
+function HeroLayerBg({ b, sy }: { b: { u: string; end: number; onDark: boolean; tint?: string }; sy: any }) {
   const top = useTopPad() + 56;
   const st = useAnimatedStyle(() => ({ transform: [{ translateY: -Math.max(0, sy.value) }, { scale: 1 + Math.max(0, -sy.value) / 600 }] }));
   return (
     <Animated.View pointerEvents="none" style={[{ position: 'absolute', top, left: 0, right: 0 }, st]}>
-      <Hero u={b.u} end={b.end} onDark={b.onDark} reg={false} />
+      {b.tint ? <CoverBleed u={b.u} tint={b.tint} end={top + b.end} top={top} /> : <Hero u={b.u} end={b.end} onDark={b.onDark} reg={false} />}
     </Animated.View>
+  );
+}
+// Альбом (вариант Б, как на ПК): обложка во всю ширину сверху, не растянута; снизу по S-кривой перетекает в цвет,
+// взятый из самой обложки. На этом цвете — название и кнопки, ниже цвет так же плавно уходит в фон темы.
+function CoverBleed({ u, tint, end, top }: { u: string; tint: string; end: number; top: number }) {
+  const { width: W } = useWin();
+  const solidH = Math.max(0, end - W); const FADE = 220;
+  const over = smooth(tint, 0, 1, 0, 1, 12); const out = smooth(tint, 1, 0, 0, 1, 12); const dim = smooth('0,0,0', 0.38, 0, 0, 1, 8);
+  return (
+    <View style={{ position: 'absolute', top: -top, left: 0, right: 0 }}>
+      <View style={{ width: W, height: W, backgroundColor: `rgb(${tint})` }}>
+        <Animated.View entering={FadeIn.duration(500).easing(EASE_OUT)} style={StyleSheet.absoluteFill}><Pic uri={api.hiArt(u)} style={{ width: W, height: W }} /></Animated.View>
+        {/* верх чуть темнее — белый логотип и кнопка «назад» читаются на любой обложке */}
+        <LinearGradient colors={dim.colors as any} locations={dim.locations as any} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: top + 40 }} />
+        <LinearGradient colors={over.colors as any} locations={over.locations as any} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: W * 0.5 }} />
+      </View>
+      <View style={{ height: solidH, backgroundColor: `rgb(${tint})` }} />
+      <LinearGradient colors={out.colors as any} locations={out.locations as any} style={{ height: FADE }} />
+    </View>
   );
 }
 
@@ -1419,30 +1570,43 @@ function useHeroScroll() {
 
 function Album({ id, open }: any) {
   const T = useT(); const ty = useTy(); const P = usePlayer(); const r = useAsync(() => api.album(id), [id]); const settled = useSettled();
-  const onScroll = useHeroScroll(); const [end, setEnd] = useState(0);
-  const photo = r.v ? api.bigArt(r.v.info?.artworkUrl100) : undefined;
-  const tone = useHeroTone(photo); const dk = tone.onDark;
+  const onScroll = useHeroScroll(); const [end, setEnd] = useState(0); const H = useContext(HeroCtx);
+  const { width: W } = useWin(); const top = useTopPad() + 56;
+  const cover = r.v?.info?.artworkUrl100 as string | undefined;
+  // цвет из обложки обычно готов за доли секунды; не пришёл за 1,2 с — нейтральный тёмный (белый текст не окажется на белом)
+  const tint0 = useCoverTint(cover); const [fb, setFb] = useState(false);
+  useEffect(() => { const tm = setTimeout(() => setFb(true), 1200); return () => clearTimeout(tm); }, []);
+  const tint = tint0 || (fb || (r.v && !cover) ? '40,40,48' : '');
+  // цвет из обложки тёмный (×0,42), поэтому текст и логотип на нём — белые в обеих темах
+  useEffect(() => { H?.setOnDark(true); }, []);
+  useEffect(() => { if (!H?.setBack) return; H.setBack(cover && tint && end ? { u: cover, end, onDark: true, tint } : null); }, [cover, tint, end]);
+  useEffect(() => () => H?.setBack?.(null), []);
   if (r.err) return <ScrollView screen><Hint center>Не удалось загрузить альбом</Hint></ScrollView>;
-  if (!r.v) return <Spin />;
+  if (!r.v || !tint) return <Spin />;
   const a = r.v.info; const list: Track[] = r.v.tracks;
+  const shuffle = () => list.length && P.go(shuffled(list), 0, 'album:' + id);
+  const meta = [a.kind ? api.KIND_LABEL[a.kind as api.Kind] : '', api.genreRu(a.primaryGenreName), (a.releaseDate || '').slice(0, 4), listMeta(list)].filter(Boolean).join(' · ');
   return (
     <ScrollView screen anim onScroll={onScroll}>
-      <View>
-        <Hero u={tone.ready ? photo : undefined} end={end} onDark={dk} />
-        <Animated.View entering={FadeIn.duration(450).easing(EASE_OUT)} style={{ alignItems: 'center', marginTop: 8, marginBottom: 16 }}>
-          <View style={{ borderRadius: 22, backgroundColor: T.ph, shadowColor: '#000', shadowOpacity: T.dark || dk ? 0.5 : 0.3, shadowRadius: 30, shadowOffset: { width: 0, height: 24 } }}><Cover u={api.hiArt(a.artworkUrl100)} size={240} r={22} /></View>
-        </Animated.View>
-        <Text style={[ty.title1, { textAlign: 'center', marginHorizontal: 16, color: dk ? '#fff' : T.ink }]}>{a.collectionName}</Text>
-        <Text onPress={() => open({ k: 'artist', id: a.artistId, name: a.artistName })} style={[ty.headline, { textAlign: 'center', color: dk ? 'rgba(255,255,255,0.82)' : T.ink2, marginTop: 4 }]}>{a.artistName}</Text>
-        <Text style={[ty.footnote, { textAlign: 'center', marginTop: 4, color: dk ? 'rgba(255,255,255,0.65)' : T.ink3 }]}>{[a.kind ? api.KIND_LABEL[a.kind as api.Kind] : '', api.genreRu(a.primaryGenreName), (a.releaseDate || '').slice(0, 4)].filter(Boolean).join(' · ')}</Text>
-        <View onLayout={(e) => setEnd(e.nativeEvent.layout.y + e.nativeEvent.layout.height + 26)} style={{ flexDirection: 'row', gap: 12, marginHorizontal: 16, marginTop: 20 }}>
-          <Btn label="Слушать" icon="play" onPress={() => P.go(list, 0)} />
-          <Btn label="Перемешать" icon="shuffle" kind="secondary" inv={dk && !T.dark} onPress={() => P.go(shuffled(list), 0)} />
+      <Animated.View entering={FadeIn.duration(420).easing(EASE_OUT)}>
+        {/* место под обложку: название ложится на её нижнюю часть, где она уже перетекла в цвет */}
+        <View style={{ height: Math.max(120, W - top - 112) }} />
+        <View style={{ paddingHorizontal: 20 }}>
+          <Text numberOfLines={2} style={[ty.title1, { color: '#fff', fontWeight: '800', letterSpacing: -0.5 }]}>{a.collectionName}</Text>
+          <Text onPress={() => open({ k: 'artist', id: a.artistId, name: a.artistName })} numberOfLines={1} style={[ty.headline, { color: 'rgba(255,255,255,0.86)', marginTop: 4 }]}>{a.artistName}</Text>
+          <Text numberOfLines={1} style={[ty.footnote, { color: 'rgba(255,255,255,0.62)', marginTop: 4 }]}>{meta}</Text>
+        </View>
+        {/* кнопки как на ПК: «Перемешать» кругом 52, «Слушать» — белая капсула */}
+        <View onLayout={(e) => setEnd(e.nativeEvent.layout.y + e.nativeEvent.layout.height + 26)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginTop: 18 }}>
+          <Press hap="light" onPress={shuffle} style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}><PcIcon n="shuffle" s={20} c="#fff" /></Press>
+          <Press hap="medium" onPress={() => list.length && P.go(list, 0, 'album:' + id)} style={{ flex: 1, height: 52, borderRadius: 26, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <PcIcon n="play" s={18} c="#111114" /><Text style={[ty.headline, { color: '#111114' }]}>Слушать</Text>
+          </Press>
         </View>
         <View style={{ height: 26 }} />
-      </View>
-      {/* в альбоме обложка у всех треков одна — показываем только название и артиста */}
-      {settled ? <Rows list={list} open={open} noCover /> : <View style={{ height: list.length * 44 }} />}
+      </Animated.View>
+      {/* в альбоме обложка у всех треков одна — показываем номер, название и артиста */}
+      {settled ? <Rows list={list} open={open} noCover num from={'album:' + id} /> : <View style={{ height: list.length * 44 }} />}
       {settled && <StoryCard kind="album" artist={a.artistName} name={a.collectionName} />}
     </ScrollView>
   );
@@ -1734,9 +1898,25 @@ function StatsScreen({ open }: any) {
 
 const fmtNum = (n: number) => n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace('.', ',')} млн` : n >= 1e3 ? `${(n / 1e3).toFixed(n >= 1e4 ? 0 : 1).replace('.', ',')} тыс` : String(n);
 
+// жанры и страны Яндекса — по-русски, как на ПК
+const YGENRES: Record<string, string> = { rap: 'Хип-хоп', hiphop: 'Хип-хоп', rusrap: 'Русский рэп', foreignrap: 'Хип-хоп', pop: 'Поп', ruspop: 'Русская поп-музыка', rock: 'Рок', rusrock: 'Русский рок', electronics: 'Электроника', dance: 'Танцевальная', house: 'Хаус', techno: 'Техно', indie: 'Инди', alternative: 'Альтернатива', metal: 'Метал', jazz: 'Джаз', classical: 'Классика', soundtrack: 'Саундтреки', rnb: 'R&B', soul: 'Соул', folk: 'Фолк', estrada: 'Эстрада', relax: 'Релакс', punk: 'Панк', reggae: 'Регги', phonk: 'Фонк', local_indie: 'Инди', posthardcore: 'Пост-хардкор', lounge: 'Лаунж' };
+const YCOUNTRIES: Record<string, string> = { US: 'США', RU: 'Россия', GB: 'Великобритания', UA: 'Украина', BY: 'Беларусь', KZ: 'Казахстан', CA: 'Канада', DE: 'Германия', FR: 'Франция', SE: 'Швеция', AU: 'Австралия', KR: 'Южная Корея', JP: 'Япония', IT: 'Италия', ES: 'Испания', NL: 'Нидерланды', NO: 'Норвегия', BR: 'Бразилия', PR: 'Пуэрто-Рико', CO: 'Колумбия', JM: 'Ямайка', NZ: 'Новая Зеландия', IE: 'Ирландия', BE: 'Бельгия', PL: 'Польша' };
+// плитка статистики: подпись, число, под ним — рост за месяц
+function StatTile({ k, v, note, up, dk, i }: { k: string; v: string; note?: string; up?: boolean; dk: boolean; i: number }) {
+  const T: any = useT(); const ty = useTy();
+  return (
+    <Animated.View entering={FadeIn.duration(520).delay(i * 70).easing(EASE_OUT)}>
+      <GlassCard radius={22} tone={dk ? 'dark' : undefined} style={{ minWidth: 132, paddingVertical: 14, paddingHorizontal: 16 }}>
+        <Text numberOfLines={1} style={[ty.footnote, { color: dk ? 'rgba(255,255,255,0.7)' : T.ink3 }]}>{k}</Text>
+        <Text numberOfLines={1} style={[ty.title2, { fontSize: 22, marginTop: 2, color: dk ? '#fff' : T.ink }]}>{v}</Text>
+        {!!note && <Text numberOfLines={1} style={[ty.caption, { marginTop: 2, fontWeight: '600', color: up ? '#34c77b' : dk ? 'rgba(255,255,255,0.6)' : T.ink3 }]}>{note}</Text>}
+      </GlassCard>
+    </Animated.View>
+  );
+}
 function Artist({ id, name, open }: any) {
   const T = useT(); const ty = useTy(); const P = usePlayer(); const r = useAsync(() => api.artist(id), [id]); const settled = useSettled();
-  const [all, setAll] = useState(false); const [dz, setDz] = useState<api.DZ | null>(null); const [end, setEnd] = useState(0);
+  const [all, setAll] = useState(false); const fol = useFollow(); const [dz, setDz] = useState<api.DZ | null>(null); const [end, setEnd] = useState(0);
   const onScroll = useHeroScroll(); const HC = useContext(HeroCtx); const avRef = useRef<View>(null);
   useEffect(() => () => HC?.setFly(null), []);
   // Deezer (фото, поклонники): запрос стартует сразу (а при нажатии на артиста — ещё раньше, см. open),
@@ -1773,6 +1953,19 @@ function Artist({ id, name, open }: any) {
   stats.push([String(E.length + S.length), 'синглов и EP']);
   if (first) stats.push([first.slice(0, 4), 'первый релиз']);
   const shown = stats.slice(0, 3);
+  const ES = [...E, ...S].sort((x: any, y: any) => String(y.releaseDate || '').localeCompare(String(x.releaseDate || '')));
+  const sim: any[] = (r.v as any).similar || [];
+  const inf: any = r.v.info || {}; const followed = fol.some((x) => x.id === id);
+  const genre = ((inf.genres || []) as string[]).map((g) => YGENRES[g]).filter(Boolean)[0] || api.genreRu(inf.primaryGenreName);
+  const country = ((inf.countries || []) as string[]).map((c) => YCOUNTRIES[c] || c)[0];
+  const subline = [genre, country].filter(Boolean).join(' • ');
+  // плитки — настоящие цифры Яндекс Музыки (как на ПК); без Яндекса — прежние (Deezer и каталог iTunes)
+  const nTr = (inf.counts && inf.counts.tracks) || 0; const nAl = (inf.counts && inf.counts.directAlbums) || 0;
+  const dl = inf.listenersDelta ? `${inf.listenersDelta > 0 ? '+' : '−'}${fmtNum(Math.abs(inf.listenersDelta))} за месяц` : '';
+  const yt: { k: string; v: string; note?: string; up?: boolean }[] = [];
+  if (inf.listeners > 0) yt.push({ k: 'Слушатели в месяц', v: fmtNum(inf.listeners), note: dl, up: inf.listenersDelta > 0 });
+  if (inf.likes > 0) yt.push({ k: 'Лайки', v: fmtNum(inf.likes) });
+  if (yt.length) { if (nTr > 0) yt.push({ k: 'Треки', v: nTr.toLocaleString('ru-RU') }); if (nAl > 0) yt.push({ k: 'Альбомы', v: String(nAl) }); if (inf.firstYear > 0) yt.push({ k: 'Первый релиз', v: String(inf.firstYear) }); }
   return (
     <ScrollView screen anim onScroll={onScroll}>
       <Animated.View entering={late.current ? FadeIn.duration(460).easing(EASE_OUT) : undefined}>
@@ -1782,13 +1975,20 @@ function Artist({ id, name, open }: any) {
           <View ref={avRef} collapsable={false} style={{ width: 176, height: 176 }}
             onLayout={() => HC?.at(avRef, (yc: number) => HC?.setFly({ name: nm, fallback: list[0]?.cover, size: 176, yc }))} />
           <Animated.View style={[{ alignItems: 'center' }, headSt]}>
-          <Text numberOfLines={2} style={[ty.largeTitle, { textAlign: 'center', marginTop: 16, color: dk ? '#fff' : T.ink }]}>{nm}</Text>
-          {!!r.v.info?.primaryGenreName && <Text style={[ty.footnote, { marginTop: 4, color: dk ? 'rgba(255,255,255,0.7)' : T.ink3 }]}>{api.genreRu(r.v.info.primaryGenreName)}</Text>}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16 }}>
+            <Text numberOfLines={2} style={[ty.largeTitle, { textAlign: 'center', flexShrink: 1, color: dk ? '#fff' : T.ink }]}>{nm}</Text>
+            <Verified s={26} c={T.accent} />
+          </View>
+          {!!subline && <Text style={[ty.footnote, { marginTop: 4, color: dk ? 'rgba(255,255,255,0.7)' : T.ink3 }]}>{subline}</Text>}
           </Animated.View>
         </View>
         {/* конец цветной шапки — низ этого блока (кнопок): меряем его, а не кнопки, — они теперь внутри обёртки */}
         <Animated.View style={headSt} onLayout={(e) => setEnd(e.nativeEvent.layout.y + e.nativeEvent.layout.height + 26)}>
-        <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginTop: 18 }}>
+        {yt.length > 0 ? (
+          <RNScroll horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 18 }} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
+            {yt.map((x, i) => <StatTile key={x.k} {...x} dk={dk} i={i} />)}
+          </RNScroll>
+        ) : <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginTop: 18 }}>
           {fans == null ? [0, 1, 2].map((i) => (
             // заглушки того же размера тихо «дышат», пока ждём цифры; потом плавно растворяются,
             // а настоящие карточки так же плавно проявляются на их месте (перекрёстно, без сдвигов)
@@ -1806,21 +2006,33 @@ function Artist({ id, name, open }: any) {
               </GlassCard>
             </Animated.View>
           ))}
-        </View>
-        <View style={{ flexDirection: 'row', gap: 12, marginHorizontal: 16, marginTop: 16 }}>
+        </View>}
+        {/* три кнопки, как на ПК: «Слушать», «В избранное», перемешать кругом 52 */}
+        <View style={{ flexDirection: 'row', gap: 10, marginHorizontal: 16, marginTop: 16 }}>
           <Btn label="Слушать" icon="play" onPress={() => list.length && P.go(list, 0, 'artist:' + id)} />
-          <Btn label="Перемешать" icon="shuffle" kind="secondary" inv={dk && !T.dark} onPress={() => list.length && P.go(shuffled(list), 0, 'artist:' + id)} />
+          <Btn label={followed ? 'В избранном' : 'В избранное'} icon={followed ? 'heart' : 'heartO'} kind="secondary" inv={dk && !T.dark} onPress={() => { hap('select'); toggleFollow({ id, name: nm, photo: dz?.photo || r.v.info?.photoS || r.v.info?.photo }); }} />
+          <Press hap="light" onPress={() => list.length && P.go(shuffled(list), 0, 'artist:' + id)} style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: dk && !T.dark ? 'rgba(255,255,255,0.92)' : T.glass, borderWidth: 1, borderColor: dk && !T.dark ? 'transparent' : T.stroke, alignItems: 'center', justifyContent: 'center' }}>
+            <PcIcon n="shuffle" s={20} c={dk && !T.dark ? '#1d1d22' : T.ink} />
+          </Press>
         </View>
         </Animated.View>
         <View style={{ height: 8 }} />
       </Animated.View>
-      <Sec right={list.length > 5 ? <Pressable hitSlop={10} onPress={() => setAll(!all)}><Text style={[ty.subhead, { color: T.accentText, fontWeight: '600' }]}>{all ? 'Свернуть' : 'Показать все'}</Text></Pressable> : undefined}>Топ треков</Sec>
-      {settled ? <Rows list={ts} queue={list} from={'artist:' + id} open={open} noFav selfId={id} /> : <Animated.View exiting={FadeOut.duration(300).easing(EASE_IO)}><RowSkel n={ts.length} /></Animated.View>}
-      {settled && A.length > 0 && <AlbumStrip title={`Альбомы · ${A.length}`} albums={A} open={open} sub="year" />}
-      {settled && E.length > 0 && <AlbumStrip title={`EP · ${E.length}`} albums={E} open={open} sub="year" />}
-      {settled && S.length > 0 && <AlbumStrip title={`Синглы · ${S.length}`} albums={S} open={open} sub="year" />}
+      <Sec right={list.length > 5 ? <Pressable hitSlop={10} onPress={() => setAll(!all)}><Text style={[ty.subhead, { color: T.accentText, fontWeight: '600' }]}>{all ? 'Свернуть' : 'Показать все'}</Text></Pressable> : undefined}>Популярные треки</Sec>
+      {settled ? <Rows list={ts} queue={list} from={'artist:' + id} open={open} noFav selfId={id} num /> : <Animated.View exiting={FadeOut.duration(300).easing(EASE_IO)}><RowSkel n={ts.length} /></Animated.View>}
+      {settled && A.length > 0 && <AlbumStrip title="Альбомы" albums={A} open={open} sub="year" />}
+      {settled && ES.length > 0 && <AlbumStrip title="Синглы и EP" albums={ES} open={open} sub="year" />}
       {settled && <AboutArtist name={nm} photo={dz?.photo} fallback={list[0]?.cover} genre={r.v.info?.primaryGenreName} first={first} fans={dz?.fans || 0} />}
       {settled && canQuiz(r.v) && <QuizCard id={id} name={nm} onStart={() => open({ k: 'quiz', id, name: nm })} />}
+      {settled && sim.length > 0 && <>
+        <Sec>Похожие исполнители</Sec>
+        <HScroll>{sim.map((x: any) => (
+          <Press key={x.artistId} onPress={() => open({ k: 'artist', id: x.artistId, name: x.artistName })} style={{ width: 104, alignItems: 'center' }}>
+            <ArtistDot name={x.artistName} id={x.artistId} size={104} />
+            <Text numberOfLines={1} style={[ty.miniTitle, { marginTop: 8, textAlign: 'center' }]}>{x.artistName}</Text>
+          </Press>
+        ))}</HScroll>
+      </>}
     </ScrollView>
   );
 }
@@ -1880,7 +2092,7 @@ function SetRow({ icon, title, value, onPress, right, first, img, round, sub }: 
       </View>
       {!!value && <Text numberOfLines={1} style={[ty.subhead, { maxWidth: 140 }]}>{value}</Text>}
       {right}
-      {onPress && !right && <Ionicons name="chevron-forward" size={17} color={T.muted} />}
+      {onPress && !right && <Chev c={T.muted} />}
       {!first && <View style={{ position: 'absolute', left: img ? 58 : 14, right: 0, top: 0, height: StyleSheet.hairlineWidth, backgroundColor: T.line }} />}
     </View>
   );
@@ -1936,6 +2148,7 @@ function useUpdateNag() {
     return () => { clearTimeout(t); clearInterval(h); };
   }, []);
 }
+const PSECS: ['over' | 'look' | 'ym' | 'app', string][] = [['over', 'Обзор'], ['look', 'Оформление'], ['ym', 'Яндекс'], ['app', 'Программа']];
 function ProfileScreen({ open, onTheme, onPulse }: any) {
   const P = usePlayer(); const T: any = useT(); const ty = useTy();
   const bannedN = useBannedCount();
@@ -1976,6 +2189,15 @@ function ProfileScreen({ open, onTheme, onPulse }: any) {
   const flipBlack = (v: boolean) => { setBkVal(v); bkRef.current?.measure((_a, _b, w, h, x, y) => onTheme?.(x + w / 2, y + h / 2, 'black', v)); };
   const stats: [string, string][] = [[st.sec ? fmtTime(st.sec) : '0 мин', 'в «Пульсе»'], [String(nTracks), plural(nTracks, ['трек', 'трека', 'треков']).replace(/^\d+ /, '')], [String(P.favs.length), 'в любимом']];
   const ink = dk ? '#fff' : T.ink, ink3 = dk ? 'rgba(255,255,255,0.7)' : T.ink3;
+  const [sec, setSec] = useState<'over' | 'look' | 'ym' | 'app'>('over'); const sleep = useSleep(); const { width: W } = useWin();
+  const wk = useMemo(() => computeStats(st, 'w'), [st]); const tileW = (W - 32 - 10) / 2;
+  const grow = wk.prevSec ? Math.round(((wk.sec - wk.prevSec) / wk.prevSec) * 100) : 0;
+  const tiles: { k: string; v: string; note?: string; up?: boolean }[] = [
+    { k: 'За неделю', v: wk.sec ? fmtTime(wk.sec) : '0 мин', note: grow ? `${grow > 0 ? '+' : '−'}${Math.abs(grow)}% к прошлой` : '', up: grow > 0 },
+    { k: 'Треков', v: String(wk.tracks), note: `${P.favs.length} в любимом` },
+    { k: 'Любимый артист', v: wk.top?.name || '—' },
+    { k: 'Чаще слушаю', v: wk.peak < 0 ? '—' : wk.peak < 6 ? 'ночью' : wk.peak < 12 ? 'утром' : wk.peak < 18 ? 'днём' : 'вечером', note: wk.peak < 0 ? '' : `около ${wk.peak}:00` },
+  ];
   return (
     <>
       <ScrollView screen anim onScroll={onScroll} keyboardShouldPersistTaps="handled">
@@ -2000,31 +2222,71 @@ function ProfileScreen({ open, onTheme, onPulse }: any) {
               <Text style={[ty.footnote, { color: ink3 }]}>{SUB.developer ? 'профиль разработчика' : ''}</Text>
             </View>
           </View>
-          {/* одна плашка: время · треки · любимое; нажатие — подробная статистика */}
-          <Animated.View entering={rise(0)} style={{ marginHorizontal: 16, marginTop: 18 }}>
-            <Press onPress={() => open({ k: 'stats' })} to={0.98}>
-              <GlassCard radius={22} tone={dk ? 'dark' : undefined}>
-                <View style={{ flexDirection: 'row', paddingVertical: 14 }}>
-                  {stats.map(([v, l], i) => (
-                    <View key={l} style={{ flex: 1, paddingHorizontal: 14, borderLeftWidth: i ? StyleSheet.hairlineWidth : 0, borderLeftColor: dk || T.dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)' }}>
-                      <Text numberOfLines={1} adjustsFontSizeToFit={Platform.OS === 'ios'} style={[ty.title2, { fontSize: 21, color: ink }]}>{v}</Text>
-                      <Text numberOfLines={1} style={[ty.footnote, { marginTop: 2, color: ink3 }]}>{l}</Text>
-                    </View>
-                  ))}
-                </View>
-                <View style={{ height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: dk || T.dark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)' }}>
-                  <Text style={[ty.miniTitle, { color: dk && !T.dark ? '#fff' : T.accentText }]}>Подробная статистика</Text>
-                  <Ionicons name="chevron-forward" size={17} color={ink3} />
-                </View>
-              </GlassCard>
-            </Press>
-          </Animated.View>
           <View onLayout={(e) => setEnd(e.nativeEvent.layout.y + e.nativeEvent.layout.height + 26)} style={{ flexDirection: 'row', gap: 12, marginHorizontal: 16, marginTop: 16 }}>
             <Btn label="Мой пульс" icon="pulse" onPress={onPulse} />
             <Btn label="Любимое" icon="heart" kind="secondary" inv={dk && !T.dark} onPress={() => open({ k: 'favs' })} />
           </View>
         </View>
 
+        {/* разделы-пилюли, как на ПК: вместо одного длинного списка */}
+        <RNScroll horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 22, flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+          {PSECS.map(([k, lb]) => (
+            <Press key={k} hap="select" onPress={() => setSec(k)} style={{ height: 36, paddingHorizontal: 16, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: sec === k ? T.primary : T.glass, borderWidth: 1, borderColor: sec === k ? 'transparent' : T.stroke }}>
+              <Text style={[ty.miniTitle, { color: sec === k ? T.onPrimary : T.ink }]}>{lb}</Text>
+            </Press>
+          ))}
+        </RNScroll>
+
+        {sec === 'over' && <Animated.View key="over" entering={FadeIn.duration(260).easing(EASE_OUT)}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginHorizontal: 16, marginTop: 18 }}>
+            {tiles.map((x, i) => (
+              <Animated.View key={x.k} entering={rise(i * 40)} style={{ width: tileW }}>
+                <Press onPress={() => open({ k: 'stats' })} to={0.98}>
+                  <GlassCard radius={22} style={{ paddingVertical: 14, paddingHorizontal: 16, minHeight: 96 }}>
+                    <Text numberOfLines={1} style={ty.footnote}>{x.k}</Text>
+                    <Text numberOfLines={1} style={[ty.title2, { fontSize: 21, marginTop: 4 }]}>{x.v}</Text>
+                    {!!x.note && <Text numberOfLines={1} style={[ty.caption, { marginTop: 2, fontWeight: '600', color: x.up ? '#34c77b' : T.ink3 }]}>{x.note}</Text>}
+                  </GlassCard>
+                </Press>
+              </Animated.View>
+            ))}
+          </View>
+          <View style={{ marginHorizontal: 16, marginTop: 12, flexDirection: 'row' }}><Btn kind="secondary" label="Подробная статистика" onPress={() => open({ k: 'stats' })} /></View>
+        {(topT || topA) && (
+          <Group title="Слушаю больше всего">
+            {topT && <SetRow img={api.smallArt(topT.t.cover)} title={topT.t.title} sub={`${topT.t.artist} · трек`} onPress={() => P.go([topT.t], 0)} />}
+            {topA && <SetRow img={topA[1].cover ? api.smallArt(topA[1].cover) : undefined} round icon="person" title={topA[0]} sub="исполнитель" onPress={topA[1].artistId ? () => open({ k: 'artist', id: topA[1].artistId, name: topA[0] }) : undefined} />}
+          </Group>
+        )}
+        <Group title="Воспроизведение">
+          <SetRow icon="infinite" title="Автопродолжение" sub="Похожие треки после альбома или плейлиста"
+            right={<Switch value={P.auto} onValueChange={P.setAuto} trackColor={{ true: T.accent, false: T.line }} thumbColor="#fff" />} />
+          <SetRow icon="moon-outline" title="Таймер сна" value={sleep ? sleepLabel(sleep) : 'выключен'} onPress={() => openSleepMenu(P.cur?.id)} />
+          <SetRow icon="eye-off-outline" title="Скрытые в «Моём пульсе»" value={bannedN ? String(bannedN) : 'нет'} onPress={() => open({ k: 'banned' })} />
+        </Group>
+        </Animated.View>}
+
+        {sec === 'look' && <Animated.View key="look" entering={FadeIn.duration(260).easing(EASE_OUT)}>
+          <Group title="Цвет">
+            <SetRow icon="color-palette" title="Цвет оформления" value={accName} onPress={() => setColorOpen(true)}
+              right={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: T.accent }} /><Chev c={T.muted} /></View>} />
+          </Group>
+        <Group title="Оформление">
+          {!P.black && <SetRow icon={T.dark ? 'moon' : 'sunny'} title="Тёмная тема"
+            right={<View ref={swRef} collapsable={false}><Switch value={swVal ?? T.dark} onValueChange={flipTheme} trackColor={{ true: T.accent, false: T.line }} thumbColor="#fff" /></View>} />}
+          <SetRow icon="contrast" title="Чёрная тема" sub={P.black ? 'Только чёрный фон, без света и цветов' : 'Только чёрный фон — без света и цветов'}
+            right={<View ref={bkRef} collapsable={false}><Switch value={bkVal ?? !!P.black} onValueChange={flipBlack} trackColor={{ true: T.accent, false: T.line }} thumbColor="#fff" /></View>} />
+        </Group>
+        </Animated.View>}
+
+        {sec === 'ym' && <Animated.View key="ym" entering={FadeIn.duration(260).easing(EASE_OUT)}>
+          <Group title="Яндекс Музыка">
+            {api.YB ? <SetRow icon="musical-note-outline" title="Аккаунт Яндекса" sub="Вход для полных треков (своя подписка Плюс)" onPress={() => open({ k: 'ym' })} />
+              : <SetRow icon="musical-note-outline" title="Недоступно в этой сборке" />}
+          </Group>
+        </Animated.View>}
+
+        {sec === 'app' && <Animated.View key="app" entering={FadeIn.duration(260).easing(EASE_OUT)}>
         <Group title="Подписка">
           <View style={{ paddingHorizontal: 14, paddingVertical: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -2037,38 +2299,15 @@ function ProfileScreen({ open, onTheme, onPulse }: any) {
             <Text style={[ty.headline, { marginTop: 10 }]}>{SUB.expires ? `До ${new Date(SUB.expires).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}` : 'Бессрочно'}</Text>
             <Text style={[ty.subhead, { marginTop: 2 }]}>{SUB.developer ? 'Профиль разработчика' : 'Продлевается автоматически'}</Text>
           </View>
-          <SetRow icon="color-palette" title="Цвет оформления" value={accName} onPress={() => setColorOpen(true)}
-            right={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: T.accent }} /><Ionicons name="chevron-forward" size={17} color={T.muted} /></View>} />
           <SetRow icon="sparkles" title="Преимущества" onPress={() => setPerks((x) => !x)} right={<Ionicons name={perks ? 'chevron-up' : 'chevron-down'} size={17} color={T.muted} />} />
           {perks && PERKS.map((p) => <SetRow key={p} icon="checkmark" title={p} />)}
         </Group>
-
-        <Group title="Воспроизведение">
-          <SetRow icon="infinite" title="Автопродолжение" sub="Похожие треки после альбома или плейлиста"
-            right={<Switch value={P.auto} onValueChange={P.setAuto} trackColor={{ true: T.accent, false: T.line }} thumbColor="#fff" />} />
-          {!!api.YB && <SetRow icon="musical-note-outline" title="Яндекс Музыка" sub="Вход для полных треков (своя подписка Плюс)" onPress={() => open({ k: 'ym' })} />}
-          <SetRow icon="eye-off-outline" title="Скрытые в «Моём пульсе»" value={bannedN ? String(bannedN) : 'нет'} onPress={() => open({ k: 'banned' })} />
-        </Group>
-
-        <Group title="Оформление">
-          {!P.black && <SetRow icon={T.dark ? 'moon' : 'sunny'} title="Тёмная тема"
-            right={<View ref={swRef} collapsable={false}><Switch value={swVal ?? T.dark} onValueChange={flipTheme} trackColor={{ true: T.accent, false: T.line }} thumbColor="#fff" /></View>} />}
-          <SetRow icon="contrast" title="Чёрная тема" sub={P.black ? 'Только чёрный фон, без света и цветов' : 'Только чёрный фон — без света и цветов'}
-            right={<View ref={bkRef} collapsable={false}><Switch value={bkVal ?? !!P.black} onValueChange={flipBlack} trackColor={{ true: T.accent, false: T.line }} thumbColor="#fff" /></View>} />
-        </Group>
-
-        {(topT || topA) && (
-          <Group title="Слушаю больше всего">
-            {topT && <SetRow img={api.smallArt(topT.t.cover)} title={topT.t.title} sub={`${topT.t.artist} · трек`} onPress={() => P.go([topT.t], 0)} />}
-            {topA && <SetRow img={topA[1].cover ? api.smallArt(topA[1].cover) : undefined} round icon="person" title={topA[0]} sub="исполнитель" onPress={topA[1].artistId ? () => open({ k: 'artist', id: topA[1].artistId, name: topA[0] }) : undefined} />}
-          </Group>
-        )}
-
-        <UpdateGroup />
+          <UpdateGroup />
         <Group title="Профиль">
           <SetRow icon="person" title="Имя" value={P.profile.name} onPress={() => { setName(P.profile.name); setEdit(true); }} />
           <SetRow icon="image" title="Фото профиля" value={photo ? 'Изменить' : 'Добавить'} onPress={pick} />
         </Group>
+        </Animated.View>}
         <Text style={[ty.caption, { textAlign: 'center', marginTop: 24 }]}>пульс · альфа {APP_VERSION}{ota.otaLabel() ? ' · ' + ota.otaLabel() : ''}</Text>
       </ScrollView>
       {colorOpen && <ColorSheet onClose={() => setColorOpen(false)} />}
@@ -2218,9 +2457,13 @@ function Bar({ value, onChange, onDone, knob, h0 = 5 }: any) {
 // Цвет звезды и шлейфа — основной цвет обложки, подогнанный под тёмный плеер; внутри звезды — белое ядро.
 // Обложка без цвета или очень тёмная → «инверсия»: белая звезда и белый шлейф, ядро чёрное (иначе сливалось бы с тёмным фоном).
 const hsl = (h: number, s: number, l: number, a = 1) => `hsla(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%, ${a})`;
+const hexA = (h: string, a: number) => { if (!/^#[0-9a-f]{6}$/i.test(h || '')) return h; const n = parseInt(h.slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
 function useCometColors(cover?: string) {
+  const T: any = useT();
   const [c, setC] = useState<api.HSL | null | undefined>(undefined);
   useEffect(() => { let ok = true; api.coverColor(cover).then((v) => ok && setC(v)); return () => { ok = false; }; }, [cover]);
+  // градиентное оформление — комета в цветах темы (как на ПК): хвост из первого цвета, звезда — последний
+  if (T.grad && T.accent3) return { key: 'g' + T.accentKey, star: T.accent3, tail: hexA(T.accent, 0.85), tail0: hexA(T.accent, 0), glow: hexA(T.accent2, 0.4), core: '#ffffff' };
   if (!c) return { key: 'inv', star: '#ffffff', tail: 'rgba(255,255,255,0.75)', tail0: 'rgba(255,255,255,0)', glow: 'rgba(255,255,255,0.35)', core: '#111114' };
   const s = Math.max(c.s, 0.65);
   return { key: `${Math.round(c.h * 360)}`, star: hsl(c.h, s, 0.64), tail: hsl(c.h, s, 0.72, 0.85), tail0: hsl(c.h, s, 0.72, 0), glow: hsl(c.h, s, 0.6, 0.4), core: '#ffffff' };
@@ -2444,6 +2687,7 @@ function Full({ onClose, onClosing, open, bgP, reg }: any) {
       } else ty.value = withTiming(0, { duration: 320, easing: EASE });
     });
 
+  const sleep = useSleep();
   if (!t) return null;
   const menu = () => { if (Platform.OS === 'ios') ActionSheetIOS.showActionSheetWithOptions({ options: ['Добавить в плейлист', 'Перейти к артисту', 'Перейти к альбому', 'История трека', 'Отмена'], cancelButtonIndex: 4, title: t.title }, (i) => {
     if (i === 0) addTo(t);
@@ -2455,6 +2699,8 @@ function Full({ onClose, onClosing, open, bgP, reg }: any) {
       ...(t.artistId ? [{ text: 'Перейти к артисту', icon: 'person-outline', onPress: () => { dismiss(); open({ k: 'artist', id: t.artistId, name: t.artist }); } }] : []),
       ...(t.albumId ? [{ text: 'Перейти к альбому', icon: 'disc-outline', onPress: () => { dismiss(); open({ k: 'album', id: t.albumId }); } }] : []),
       { text: 'История трека', icon: 'book-outline', onPress: () => setStory(true) },
+      { text: sleep ? `Таймер сна · ${sleepLabel(sleep)}` : 'Таймер сна', icon: 'moon-outline', onPress: () => setTimeout(() => openSleepMenu(t.id), 260) },
+      { text: 'Не нравится', icon: 'heart-dislike-outline', danger: true, onPress: () => { hap('error'); M_pulse.dislike(t).catch(() => {}); P.step(1); } },
     ]); };
   const goArtist = () => { if (t.artistId) { dismiss(); open({ k: 'artist', id: t.artistId, name: t.artist }); } };
   const source = t.album && t.album !== t.title ? t.album : t.artist;
@@ -2640,12 +2886,37 @@ function MiniArt({ u }: { u: string }) {
   return <View style={{ width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: T.ph }}>{layers.map((l) => <CoverFadeLayer key={l.k} u={l.u} first={l.k === 0} />)}</View>;
 }
 
+// «Сколько треков артиста прослушано» (кольца на главной): первый запуск — любимые и недавние считаем
+// прослушанными; дальше трек засчитывается, если играл 30 секунд
+// Таймер сна: по времени — проверка раз в 5 с; «после трека» — пауза, как только трек сменился
+function SleepWatch() {
+  const P = usePlayer(); const cur = useCurId(); const s = useSleep(); const pr = useRef(P); pr.current = P;
+  useEffect(() => { if (!s || s.track) return; const iv = setInterval(() => { const v = sleepGet(); if (v && !v.track && Date.now() >= v.at) { sleepSet(null); if (pr.current.playing) pr.current.toggle(); } }, 5000); return () => clearInterval(iv); }, [s]);
+  useEffect(() => { const v = sleepGet(); if (v && v.track && cur && cur !== v.track) { sleepSet(null); if (pr.current.playing) pr.current.toggle(); } }, [cur]);
+  return null;
+}
+export function openSleepMenu(curId?: string) {
+  const s = sleepGet(); const set = (m: number) => sleepSet({ at: Date.now() + m * 60000 });
+  openMenu(s ? `Таймер сна · ${sleepLabel(s)}` : 'Таймер сна', [
+    ...[15, 30, 45, 60].map((m) => ({ text: `${m} минут`, icon: 'time-outline', onPress: () => set(m) })),
+    ...(curId ? [{ text: 'После этого трека', icon: 'musical-notes-outline', onPress: () => sleepSet({ at: 0, track: curId }) }] : []),
+    ...(s ? [{ text: 'Выключить таймер', icon: 'moon-outline', danger: true, onPress: () => sleepSet(null) }] : []),
+  ]);
+}
+function HeardTracker() {
+  const P = usePlayer(); const cur = useCurId(); const pr = useRef(P); pr.current = P;
+  const seeded = useRef(false);
+  useEffect(() => { if (seeded.current || !(P.favs.length || P.recent.length)) return; seeded.current = true; heardSeed([...(P.favs as Track[]), ...(P.recent as Track[])]); }, [P.favs.length, P.recent.length]);
+  useEffect(() => { if (!cur) return; const tm = setTimeout(() => { const c = pr.current.cur; if (c && c.id === cur) markHeard([c]); }, 30000); return () => clearTimeout(tm); }, [cur]);
+  return null;
+}
+
 // Содержимое вкладки. Обёрнуто в memo: при переключении вкладок перерисовывается только та, что
 // проявляется или прячется (меняется active), а не всё приложение — меньше работы, ровнее звук и анимация.
-const PaneBody = React.memo(function PaneBody({ k, active, open, openFull }: { k: 'home' | 'pulse' | 'lib'; active: boolean; open: (s: any) => void; openFull: () => void }) {
+const PaneBody = React.memo(function PaneBody({ k, active, open, openFull, onPulse }: { k: 'home' | 'pulse' | 'lib'; active: boolean; open: (s: any) => void; openFull: () => void; onPulse?: () => void }) {
   return (
     <Layer edge={k !== 'pulse'} home={k === 'home'} right={k === 'home' ? <AvatarBtn onPress={() => open({ k: 'profile' })} /> : undefined} extra={k === 'home' ? <SearchBtn onPress={() => open({ k: 'search' })} /> : undefined}>
-      {k === 'home' ? <Home open={open} /> : k === 'pulse' ? <PulseScreen openFull={openFull} active={active} /> : <Library open={open} />}
+      {k === 'home' ? <Home open={open} onPulse={onPulse} /> : k === 'pulse' ? <PulseScreen openFull={openFull} active={active} /> : <Library open={open} />}
     </Layer>
   );
 });
@@ -2726,7 +2997,7 @@ const StackBody = React.memo(function StackBody({ s, open, back, onTheme, onPuls
     : s.k === 'banned' ? <BannedScreen />
     : s.k === 'ai' ? <AiScreen open={open} back={back} q0={s.q} />
     : s.k === 'ym' ? <YmScreen />
-    : s.k === 'album' ? <Album key={s.id} id={s.id} open={open} /> : s.k === 'artist' ? <Artist key={s.id} id={s.id} name={s.name} open={open} /> : s.k === 'list' ? <ListScreen title={s.title} tracks={s.tracks} open={open} /> : <AlbumsScreen title={s.title} albums={s.albums} open={open} />;
+    : s.k === 'album' ? <Album key={s.id} id={s.id} open={open} /> : s.k === 'artist' ? <Artist key={s.id} id={s.id} name={s.name} open={open} /> : s.k === 'chart' ? <ChartScreen open={open} /> : s.k === 'coll' ? <CollScreen s={s} open={open} /> : s.k === 'list' ? <ListScreen title={s.title} tracks={s.tracks} open={open} /> : <AlbumsScreen title={s.title} albums={s.albums} open={open} />;
   return s.k === 'artist' || s.k === 'album' || s.k === 'profile'
     ? <HeroLayer onBack={back}>{body}</HeroLayer>
     : <Layer left={<IconBtn icon="chevron-left" size={44} onPress={back} />}>{body}</Layer>;
@@ -2869,6 +3140,7 @@ function ShellMain() {
   const [seen, setSeen] = useState<Record<string, boolean>>({ home: true });
   useEffect(() => { setSeen((x) => (x[tab] ? x : { ...x, [tab]: true })); }, [tab]);
   const goTab = useCallback((k: any) => { Keyboard.dismiss(); setStack([]); setLeaving(null); x.value = 0; shift.value = 0; setTab(k); }, []);
+  const goPulse = useCallback(() => goTab('pulse'), [goTab]);
   const darkRef = useRef(T.dark); darkRef.current = T.dark;
   // kind: 'dark' — светлая ⇄ тёмная; 'black' — включить/выключить чёрную тему (круг — цвета новой темы)
   const themeAt = useCallback((x: number, y: number, kind: 'dark' | 'black' = 'dark', on?: boolean) => setWipe((w) => w || { x, y, kind, on,
@@ -2894,7 +3166,7 @@ function ShellMain() {
           поэтому переход мгновенный и не тормозит даже во время музыки. Видимую плавно проявляем. */}
       {TABS.map((k) => seen[k] && (
         <TabPane key={k} active={tab === k} covered={n >= 2} under={tab === k && n === 1} shift={shift}>
-          <PaneBody k={k} active={k === 'pulse' && pulseOn} open={open} openFull={openFull} />
+          <PaneBody k={k} active={k === 'pulse' && pulseOn} open={open} openFull={openFull} onPulse={goPulse} />
         </TabPane>
       ))}
 
@@ -2913,6 +3185,7 @@ function ShellMain() {
       {!quizOn && !aiOn && <Animated.View entering={rise(40, 16, 440)} exiting={FadeOut.duration(200).easing(EASE_IO)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, top: 0, zIndex: 30 }} pointerEvents="box-none"><TabDock tab={tab} onTab={goTab} /></Animated.View>}
 
       <AmbientDriver />
+      <HeardTracker /><SleepWatch />
       <PulseFeeder />
       <PulseLearner />
       {/* на вкладке «Пульс» плеер — сам экран, поэтому мини-плеер там прячется (если играет «Мой пульс») */}

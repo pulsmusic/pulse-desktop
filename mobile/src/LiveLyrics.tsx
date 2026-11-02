@@ -8,6 +8,7 @@ import { View, Text, ScrollView, Pressable, Platform, ActivityIndicator, NativeS
 import Animated, { useSharedValue, useAnimatedStyle, SharedValue, FadeIn } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePlayer } from './player';
+import { PcIcon } from './PcIcons';
 import { getLyrics, wordTimes, adFlags } from './lyrics';
 import type { Lyrics, Line } from './lyrics';
 
@@ -121,6 +122,13 @@ export function LiveLyrics({ t }: { t: { id: string; url?: string; title: string
           : <Text key={i} style={{ fontFamily: SF, fontSize: 22, lineHeight: 30, fontWeight: '600', color: 'rgba(255,255,255,0.88)', marginBottom: l.text ? 8 : 14 }}>{l.text}</Text>)}
         <Text style={{ fontFamily: SF, fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 10 }}>{(ly.writers ? 'Авторы: ' + ly.writers + ' · ' : '') + 'Текст: ' + ly.source + (synced ? (ly.ai ? ' · время по словам (ИИ)' : ly.words ? ' · время по словам' : ' · подсветка по слогам') : '')}</Text>
       </ScrollView>
+      {/* пометка, как на ПК: время слов посчитал ИИ (общая база разметки) */}
+      {synced && ly.ai && (
+        <View pointerEvents="none" style={{ position: 'absolute', left: 0, bottom: 4, height: 36, borderRadius: 18, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.22)', paddingHorizontal: 12 }}>
+          <PcIcon n="spark" s={14} c="rgba(255,255,255,0.85)" />
+          <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '600' }}>Время слов — ИИ</Text>
+        </View>
+      )}
       {synced && (
         <View style={{ position: 'absolute', right: 0, bottom: 4, height: 36, borderRadius: 18, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.22)', paddingHorizontal: 4 }}>
           <Pressable onPress={() => setShift(shift - 0.2)} hitSlop={6} style={{ width: 30, height: 30, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontSize: 18 }}>−</Text></Pressable>

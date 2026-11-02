@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { Pressable, Image, View, Text, StyleSheet, Platform, AppState, useWindowDimensions } from 'react-native';
+import { Pressable, Image, View, Text, StyleSheet, Platform, AppState, useWindowDimensions, Dimensions } from 'react-native';
 import { BlurView as XBlur } from 'expo-blur';
 // Матовое стекло. На Android обычный BlurView не размывает (только полупрозрачная заливка) — включаем
 // настоящее размытие (как на iPhone); на iOS всё как было.
@@ -12,6 +12,9 @@ const AND = Platform.OS === 'android';
 export const BlurView = ({ live, ...p }: any) => (AND ? null : <XBlur {...p} />);
 // облегчённый режим для Android: без масок, размытия и частых перерисовок фона
 export const LITE = AND;
+// Единый размер обложки во всех лентах и сетках (плейлисты, подборки, релизы, чарт, «Моя музыка»): ровно два
+// в ряд по ширине экрана, но не больше 176 — так на любом телефоне все обложки одного размера. Скругление 22.
+export const CARD = Math.min(176, Math.floor((Dimensions.get('window').width - 48) / 2));
 import { LinearGradient } from 'expo-linear-gradient';
 import { LOGO_URI, LOGO_RATIO, STAR_URI, IMP_URI, IMP_RATIO, IMP_STAR_URI, STAR4_URI, STAR_HD_URI, STAR_OUT_URI, GLOW_URI, LSTAR_URI, LSTAR_RATIO, LSTAR_PAD, LSTAR_ICON_URI, LSTAR_ICON_OUT_URI, LSTAR_ICON_PAD, LSTAR_HD_URI, LSTAR_HD_PAD, LSTAR_LINE_URI, STAR_GLOW_URI, STAR_GLOW_PAD, STAR_SOFT_URI, STAR_SOFT_PAD, IMP_STAR_GLOW_URI, IMP_STAR_GLOW_PAD, IMP_STAR_SOFT_URI, IMP_STAR_SOFT_PAD, LSTAR_GLOW_URI, LSTAR_GLOW_PAD, STAR_FADE_URI, IMP_STAR_FADE_URI, LSTAR_FADE_URI, LSTAR_HD_FADE_URI } from './logoData';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -23,7 +26,7 @@ try { XImage = require('expo-image').Image; } catch { XImage = null; }
 try { SVG = require('react-native-svg'); } catch { SVG = null; }
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedProps, withRepeat, withTiming, withDelay, withSequence, FadeIn, Easing, interpolate, cancelAnimation, makeMutable, useFrameCallback } from 'react-native-reanimated';
 import { usePlayer, useCurId, usePlaying, useTheme } from './player';
-import { artistPhoto, artistPhotoBy, bigArt, smallArt, KIND_LABEL } from './api';
+import { artistPhoto, artistPhotoBy, bigArt, smallArt, artPx, KIND_LABEL } from './api';
 import { RAYS_A, RAYS_B, LIGHT_GLOW } from './waterData';
 import type { Track } from './api';
 
@@ -229,7 +232,7 @@ export const Explicit = () => {
   );
 };
 
-export function Skel({ n = 3, size = 150 }: { n?: number; size?: number }) {
+export function Skel({ n = 3, size = CARD }: { n?: number; size?: number }) {
   const T = useT(); const o = useSharedValue(0.4); const vis = useVisible();
   useEffect(() => { if (!vis) { cancelAnimation(o); return; } o.value = withRepeat(withTiming(1, { duration: 800 }), -1, true); return () => cancelAnimation(o); }, [vis]);
   const a = useAnimatedStyle(() => ({ opacity: o.value }));
@@ -336,13 +339,15 @@ export const IconBtn = ({ icon, onPress, size = 44, plain, color }: any) => {
   );
 };
 
+// иконки кнопок — те же, что на ПК (PcIcons подключается при отрисовке: он сам берёт SVG отсюда)
+const PC_SET = new Set(['play', 'pause', 'shuffle', 'plus', 'pencil', 'trash', 'download', 'heart', 'heartO', 'check', 'close', 'more', 'search', 'queue', 'repeat', 'user', 'gear', 'clock', 'moon', 'camera', 'lyrics', 'listAdd', 'spark']);
 export const Btn = ({ label, icon, kind = 'primary', onPress, style, inv }: any) => {
   const T0 = useT(); const ty = useTy(); const p = kind === 'primary';
   // inv — плотная светлая кнопка поверх тёмного фона (читается на любом цвете)
   const T = inv && !p ? { ...T0, glass: 'rgba(255,255,255,0.92)', stroke: 'transparent', ink: '#1d1d22' } : T0;
   return (
     <Press onPress={onPress} hap={p ? 'medium' : 'light'} style={[{ flex: 1, minWidth: 0, height: 52, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: p ? T.primary : T.glass, borderWidth: 1, borderColor: p ? 'transparent' : T.stroke }, style]}>
-      {!!icon && <Ic n={icon} s={18} c={p ? T.onPrimary : T.ink} />}
+      {!!icon && (PC_SET.has(icon) ? React.createElement(require('./PcIcons').PcIcon, { n: icon, s: 18, c: p ? T.onPrimary : T.ink }) : <Ic n={icon} s={18} c={p ? T.onPrimary : T.ink} />)}
       <Text style={[ty.headline, { color: p ? T.onPrimary : T.ink }]}>{label}</Text>
     </Press>
   );
@@ -383,8 +388,8 @@ export const Card = React.memo(function Card({ t, i, onPress }: { t: Track; i: n
   const T = useT(); const ty = useTy();
   return (
     <Animated.View entering={i < 10 ? rise(Math.min(i, 8) * 45) : undefined}>
-      <Press onPress={onPress} style={{ width: 150 }}>
-        <View style={{ borderRadius: 22, backgroundColor: T.ph, marginBottom: 8 }}><Cover u={t.cover} size={150} r={22} /></View>
+      <Press onPress={onPress} style={{ width: CARD }}>
+        <View style={{ borderRadius: 22, backgroundColor: T.ph, marginBottom: 8 }}><Cover u={artPx(t.cover, CARD)} size={CARD} r={22} /></View>
         <Text numberOfLines={1} style={ty.miniTitle}>{t.title}</Text>
         <Text numberOfLines={1} style={ty.footnote}>{t.artist}</Text>
       </Press>
@@ -396,8 +401,8 @@ export const AlbumCard = React.memo(function AlbumCard({ x, onPress, i = 0, sub 
   const T = useT(); const ty = useTy();
   return (
     <Animated.View entering={i < 10 ? rise(Math.min(i, 8) * 45) : undefined}>
-      <Press onPress={onPress} style={{ width: 150 }}>
-        <View style={{ borderRadius: 22, backgroundColor: T.ph, marginBottom: 8 }}><Cover u={bigArt(x.artworkUrl100)} size={150} r={22} /></View>
+      <Press onPress={onPress} style={{ width: CARD }}>
+        <View style={{ borderRadius: 22, backgroundColor: T.ph, marginBottom: 8 }}><Cover u={artPx(x.artworkUrl100, CARD)} size={CARD} r={22} /></View>
         <Text numberOfLines={1} style={ty.miniTitle}>{x.collectionName}</Text>
         <Text numberOfLines={1} style={ty.footnote}>{sub === 'year' ? [(x.releaseDate || '').slice(0, 4), x.trackCount > 1 ? `${x.trackCount} тр.` : ''].filter(Boolean).join(' · ') : [x.artistName, (x.releaseDate || '').slice(0, 4)].filter(Boolean).join(' · ')}</Text>
       </Press>
@@ -408,8 +413,8 @@ export const AlbumCard = React.memo(function AlbumCard({ x, onPress, i = 0, sub 
 export const MoreCard = ({ onPress, count }: { onPress: () => void; count: number }) => {
   const ty = useTy();
   return (
-    <Press onPress={onPress} style={{ width: 150 }}>
-      <Glass radius={22} style={{ width: 150, height: 150, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+    <Press onPress={onPress} style={{ width: CARD }}>
+      <Glass radius={22} style={{ width: CARD, height: CARD, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
         <Ic n="chevron-forward" s={28} />
         <Text style={[ty.headline, { marginTop: 4 }]}>Ещё</Text>
       </Glass>
@@ -426,12 +431,13 @@ const NowEq = () => { const playing = usePlaying(); return <Eq playing={playing}
 // Строка трека. Оптимизация: следит только за id играющего трека (а не за всем плеером) и перерисовывается,
 // только если изменился сам трек, его место, лайк или вид строки — смена трека больше не перерисовывает весь список.
 // Плавное появление — только у первых 14 строк (дальше их всё равно не видно, а анимации стоили бы кадров).
-const RowImpl = ({ t, i, onPress, onLongPress, onArtist, fav, onFav, noFav, noCover }: any) => {
+const RowImpl = ({ t, i, onPress, onLongPress, onArtist, fav, onFav, noFav, noCover, num }: any) => {
   const cur = useCurId(); const T = useT(); const ty = useTy();
   const now = cur === t.id;
   return (
     <Animated.View entering={i < 14 ? rise(Math.min(i, 10) * 35, 5, 520) : undefined}>
-      <Press onPress={onPress} hap="light" onLongPress={onLongPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: noCover ? 11 : 8, paddingLeft: 16 }}>
+      <Press onPress={onPress} hap="light" onLongPress={onLongPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: noCover ? 11 : 8, paddingLeft: num ? 8 : 16 }}>
+        {!!num && <Text style={[ty.subhead, { width: 24, textAlign: 'center', fontVariant: ['tabular-nums'] }]}>{i + 1}</Text>}
         {!noCover && <Cover u={smallArt(t.cover)} size={48} r={12} />}
         <View style={{ flex: 1, minWidth: 0 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -450,7 +456,7 @@ const RowImpl = ({ t, i, onPress, onLongPress, onArtist, fav, onFav, noFav, noCo
   );
 };
 
-export const Row = React.memo(RowImpl, (a: any, b: any) => a.t === b.t && a.i === b.i && a.fav === b.fav && a.noFav === b.noFav && a.noCover === b.noCover);
+export const Row = React.memo(RowImpl, (a: any, b: any) => a.t === b.t && a.i === b.i && a.fav === b.fav && a.noFav === b.noFav && a.noCover === b.noCover && a.num === b.num);
 
 export const AlbumRow = React.memo(function AlbumRow({ x, i, onPress }: any) {
   const ty = useTy();

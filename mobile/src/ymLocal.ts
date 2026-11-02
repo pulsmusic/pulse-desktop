@@ -118,11 +118,24 @@ async function artist(aid: number, tok: string) {
       ym(`/artists/${aid}/direct-albums?page=0&page-size=100&sort-by=year`, tok).catch(() => null),
       ym(`/artists/${aid}/tracks?page=0&page-size=50`, tok).catch(() => null),
     ]);
+    // как в версии для ПК: настоящая статистика из brief-info — слушатели за месяц и прирост, лайки, число треков
+    // и альбомов во всём каталоге, страны, год первого релиза (только если список альбомов полный)
+    const info: any = bi && bi.artist ? artistInfo(bi.artist) : { artistId: aid };
+    if (bi && bi.artist) {
+      const a0 = bi.artist; const st = bi.stats || {};
+      info.counts = a0.counts || {}; info.countries = a0.countries || []; info.genres = a0.genres || [];
+      info.listeners = st.lastMonthListeners || 0; info.listenersDelta = st.lastMonthListenersDelta || 0;
+      info.likes = a0.likesCount || 0;
+      const d = a0.description; info.description = typeof (d && (d.text || d)) === 'string' ? (d.text || d) : '';
+      const all = (al && al.albums) || []; const years = all.length < 50 ? all.map((x: any) => x.year).filter((y: number) => y > 1900) : [];
+      info.firstYear = years.length ? Math.min(...years) : 0;
+    }
     return {
-      info: bi && bi.artist ? artistInfo(bi.artist) : { artistId: aid },
+      info,
       albums: clean(((al && al.albums) || []).map(collection)),
       songs: clean((((tr && tr.tracks) || (bi && bi.popularTracks)) || []).map(song)),
       similar: ((bi && bi.similarArtists) || []).map((a: any) => a.name).slice(0, 15),
+      simA: ((bi && bi.similarArtists) || []).slice(0, 12).map(artistInfo),
     };
   });
 }
@@ -153,6 +166,39 @@ async function newReleases(limit: number) {
     if (!ids.length) return [];
     const list = await ym('/albums', '', { method: 'POST', form: { 'album-ids': ids.join(',') } });
     return clean((list || []).map(collection));
+  });
+}
+// плейлист Яндекса (подборки редакции, «Плейлист дня», «Дежавю»…) → простой вид, как в версии для ПК
+function ypl(p: any) {
+  if (!p || p.kind == null) return null;
+  const u = (p.cover && (p.cover.uri || (p.cover.itemsUri && p.cover.itemsUri[0]))) || p.ogImage;
+  return { uid: String((p.owner && p.owner.uid) || p.uid || ''), kind: String(p.kind), title: p.title || 'Плейлист', desc: String(p.description || '').replace(/\s+/g, ' ').slice(0, 220), count: p.trackCount || 0, cover: cover(u, '400x400'), coverBig: cover(u) };
+}
+// витрина главной: персональные подборки (нужен вход) и подборки редакции
+async function landing(tok: string) {
+  const t = cleanToken(tok);
+  return cached(`land:${t.slice(-6)}`, 1800, async () => {
+    const r = await ym('/landing3?blocks=personalplaylists,new-playlists', tok, { ms: 12000 });
+    const out: { personal: any[]; playlists: any[] } = { personal: [], playlists: [] }; const seen = new Set<string>();
+    for (const b of (r && r.blocks) || []) for (const e of b.entities || []) {
+      const d = e && e.data;
+      if (e.type === 'personal-playlist' && d && d.data) { const p = ypl(d.data); if (p && p.uid) out.personal.push({ ...p, special: d.type || '' }); }
+      else if (e.type === 'playlist' && d) { const p = ypl(d); if (p && p.uid && !seen.has(p.uid + ':' + p.kind)) { seen.add(p.uid + ':' + p.kind); out.playlists.push(p); } }
+    }
+    return out;
+  });
+}
+// треки плейлиста Яндекса; если пришли только номера треков — дозапрашиваем сами треки
+async function playlist(uid: string, kind: string, tok: string) {
+  return cached(`pl:${uid}:${kind}`, 600, async () => {
+    const p = await ym('/users/' + encodeURIComponent(uid) + '/playlists/' + encodeURIComponent(kind), tok);
+    const short: any[] = (p && p.tracks) || [];
+    let full = short.map((x) => x && x.track).filter(Boolean);
+    if (!full.length && short.length) {
+      const ids = short.slice(0, 150).map((x) => x.id + (x.albumId ? ':' + x.albumId : '')).join(',');
+      full = (await ym('/tracks', tok, { method: 'POST', form: { 'track-ids': ids, 'with-positions': 'false' } }).catch(() => [])) || [];
+    }
+    return { info: ypl(p), results: clean(full.map(song)) };
   });
 }
 async function stream(tid: number, tok: string) {
@@ -207,6 +253,8 @@ export async function ymLocal(path: string, token: string): Promise<any> {
   if ((m = p.match(/^\/artist\/(\d+)$/))) return artist(+m[1], token);
   if (p === '/artist-by-name') return artistByName(q('name'), token);
   if ((m = p.match(/^\/album\/(\d+)$/))) return album(+m[1], token);
+  if (p === '/landing') return landing(token);
+  if ((m = p.match(/^\/playlist\/([^/]+)\/([^/]+)$/))) return playlist(decodeURIComponent(m[1]), decodeURIComponent(m[2]), token);
   if (p === '/chart') return { results: await chart(lim(50, 100)) };
   if (p === '/new') return { results: await newReleases(lim(20, 50)) };
   if ((m = p.match(/^\/stream\/(\d+)$/))) return stream(+m[1], token);
