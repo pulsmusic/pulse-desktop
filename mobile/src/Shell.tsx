@@ -2790,7 +2790,9 @@ function ShellMain() {
   useUpdateNag();
   const P = usePlayer(); const T = useT(); const ty = useTy(); const ins = useSafeAreaInsets(); const { width } = useWin();
   // тёмная тема — снизу почти чёрный; светлая — цвет фона (на чёрном не читались бы тёмные подписи вкладок)
-  const dockRgb = (T as any).dark ? ((T as any).black ? '0,0,0' : '10,9,13') : hexRgb((T as any).bgBase || '#ffffff');
+  // переход — ровно в цвет фона страницы (в тёмной теме фон чёрный): если уходить в цвет чуть светлее фона,
+  // внизу появляется видимая «подложка» — полоса светлее остального экрана
+  const dockRgb = hexRgb((T as any).bgBase || ((T as any).dark ? '#000000' : '#ffffff'));
   // мини-плеер — сплошная карточка (не просвечивает): тёмная в тёмной теме, белая в светлой
   const dockMini = (T as any).dark ? ((T as any).black ? '#141416' : '#1d1c23') : '#ffffff';
   const fadeL = Math.round(width * 0.62);   // зона перехода над мини-плеером (≈ три строки списка)
