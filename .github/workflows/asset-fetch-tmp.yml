@@ -1,0 +1,16 @@
+name: tmp asset fetch
+on: { push: { branches: [asset-fetch-tmp] } }
+permissions: { contents: write }
+jobs:
+  f:
+    runs-on: ubuntu-latest
+    steps:
+      - env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          UA="PulseDesignMockup/1.0 (https://github.com/pulsmusic/pulse-desktop)"
+          curl -sfL -A "$UA" -o uzi.png "https://commons.wikimedia.org/wiki/Special:FilePath/Lil_Uzi_Vert_(2018).png?width=900" || true
+          curl -sfL -A "$UA" -o uzi2.jpg "https://commons.wikimedia.org/wiki/Special:FilePath/Lil_Uzi_Vert_(cropped).jpg?width=900" || true
+          ls -la; file * || true
+          gh release delete design-tmp -R "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+          F=(); for x in uzi.png uzi2.jpg; do [ -s "$x" ] && F+=("$x"); done
+          gh release create design-tmp "${F[@]}" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "tmp" --notes "временно" --prerelease --latest=false
