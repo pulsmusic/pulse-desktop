@@ -1,0 +1,13 @@
+{
+  "version": "0.15.1",
+  "date": "2026-11-02",
+  "notes": [
+    "Смена трека в островке стала плавной — без рывков и подмены текста на лету"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.1/pulse-app-0.15.1.zip",
+  "sha256": "c477b512e0e749cddaa2185dae1f84fdd5d6015f1ce25a32be23f11f7a6ec96c",
+  "size": 699590,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
