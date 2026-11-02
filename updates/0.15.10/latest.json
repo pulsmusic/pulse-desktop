@@ -1,0 +1,13 @@
+{
+  "version": "0.15.10",
+  "date": "2026-11-02",
+  "notes": [
+    "Окно открывается сразу, анимация запуска идёт на глазах"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.10/pulse-app-0.15.10.zip",
+  "sha256": "71cb0bcd0b1ef2f9080b28392826579b5327aaadd42a7c856a0bf428dd592467",
+  "size": 605779,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
