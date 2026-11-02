@@ -9,6 +9,9 @@ import { hiArt, smallArt, YB, streamUrl, streamErr } from './api';
 import { playable, preload, forget, dropImage } from './audioCache';
 import { LIGHT, DARK, withAccent, blackOf } from './theme';
 import { similar, key as tkey } from './pulse';
+// заранее — только на диск (expo-image), не в оперативную память: картинка появится мгновенно, но не держится в памяти зря
+let XI: any = null; try { XI = require('expo-image').Image; } catch { XI = null; }
+const prefetch = (u?: string) => { if (!u) return; try { if (XI && XI.prefetch) XI.prefetch(u, 'disk'); else Image.prefetch(u).catch(() => {}); } catch {} };
 
 export type Playlist = { id: string; name: string; cover?: string; tracks: Track[]; at: number };
 const Ctx = createContext<any>(null);
@@ -224,7 +227,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const nx = [nx1, nx2].filter((x) => x && x !== cur) as Track[];
     const tms = nx.map((n, k) => {
-      if (n.cover) { Image.prefetch(hiArt(n.cover)).catch(() => {}); Image.prefetch(smallArt(n.cover)).catch(() => {}); }
+      if (n.cover) { prefetch(hiArt(n.cover)); prefetch(smallArt(n.cover)); }
       return setTimeout(() => (YB ? streamUrl(n).catch(() => null) : preload(n.url)), k * 400);   // Яндекс: заранее готовим ссылку
     });
     return () => tms.forEach(clearTimeout);

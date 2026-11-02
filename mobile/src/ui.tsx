@@ -202,6 +202,17 @@ export const GlassCard = ({ style, children, radius = 22, tone }: any) => {
   );
 };
 
+// Любая картинка-обложка: expo-image (один общий кэш в памяти и на диске, сам уменьшает картинку под размер места).
+// Без библиотеки — обычный Image. Так все обложки живут в ОДНОМ кэше, а не в двух (Image + expo-image) сразу.
+export const Pic = ({ uri, style, fit = 'cover', fade, onLoad }: { uri?: string; style: any; fit?: 'cover' | 'contain'; fade?: boolean; onLoad?: () => void }) => {
+  if (XImage) return <XImage source={uri ? { uri } : undefined} style={style} contentFit={fit} cachePolicy="memory-disk" transition={fade ? 180 : 0} recyclingKey={uri} onLoad={onLoad} />;
+  return <Image source={uri ? { uri } : undefined} style={style} resizeMode={fit} onLoad={onLoad} />;
+};
+// заранее скачать картинку на диск (не в память) — появится мгновенно, но не занимает оперативку, пока не нужна
+export const prefetchPic = (uri?: string) => { if (!uri) return; try { if (XImage && XImage.prefetch) XImage.prefetch(uri, 'disk'); else Image.prefetch(uri).catch(() => {}); } catch {} };
+// приложение ушло в фон (музыка играет дальше) — отпускаем картинки из памяти: Android реже выгружает приложение
+try { AppState.addEventListener('change', (s) => { if (s === 'background' && XImage && XImage.clearMemoryCache) XImage.clearMemoryCache().catch?.(() => {}); }); } catch {}
+
 export const Cover = ({ u, size, r = 12 }: { u?: string; size: number; r?: number }) => {
   const T = useT(); const st = { width: size, height: size, borderRadius: r, backgroundColor: T.ph };
   if (XImage) return <XImage source={u ? { uri: u } : undefined} style={st} contentFit="cover" cachePolicy="memory-disk" transition={180} recyclingKey={u} />;

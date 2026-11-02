@@ -20,6 +20,7 @@ import { Sky } from './Quiz';
 import { cosmosOf } from './theme';
 import { SHEET, useT, useTy, useWin, Press, Matte, Glow, LStar, PIcon, Explicit, BrokenHeart, SVGLIB, Marquee, PlayPause, GlassBtn, HeartFill, AiIcon, hap, WaterLight, setFullOrigin, useAwake } from './ui';
 import type { Hap } from './ui';
+import { Pic, prefetchPic } from './ui';
 import { LSTAR_UP, LSTAR_LO, LSTAR_RATIO } from './logoData';
 // тактильная отдача — общая (ui.tsx → hap): здесь короткие имена для совместимости
 const buzz = (k: 'light' | 'medium' | 'ok' | Hap = 'light') => hap(k === 'ok' ? 'success' : k);
@@ -405,7 +406,7 @@ function DeckCard({ t, slot, ckey, cw, ch, W, tx, ty, goneKey, inKey, inX, enter
   return (
     <Animated.View pointerEvents={top ? 'auto' : 'none'} style={[{ position: 'absolute', width: cw, height: ch, borderRadius: 22, backgroundColor: T.ph, shadowColor: T.accent, shadowOpacity: T.dark ? 0.5 : 0.3, shadowRadius: 24, shadowOffset: { width: 0, height: 16 } }, st]}>
       <View style={{ flex: 1, borderRadius: 22, overflow: 'hidden' }}>
-        <Image source={{ uri: api.hiArt(t.cover) }} style={abs} resizeMode="cover" />
+        <Pic uri={api.artPx(t.cover, cw)} style={abs} />
         <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.72)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: ch * 0.4 }} />
         <View style={{ position: 'absolute', left: 18, right: 18, bottom: 18 }}>
           <Text numberOfLines={2} style={{ fontFamily: SF, fontSize: 26, lineHeight: 30, fontWeight: '700', letterSpacing: -0.4, color: '#fff' }}>{t.title}</Text>
@@ -694,7 +695,7 @@ function Scratch({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     let ok = true; setErr(false);
-    pulse.start(ctx()).then((l) => { if (!ok) return; if (!l.length) setErr(true); else { setList(l); Image.prefetch(api.hiArt(l[0].cover)).catch(() => {}); } }).catch(() => ok && setErr(true));
+    pulse.start(ctx()).then((l) => { if (!ok) return; if (!l.length) setErr(true); else { setList(l); prefetchPic(api.hiArt(l[0].cover)); } }).catch(() => ok && setErr(true));
     return () => { ok = false; };
   }, [tryK]);
   const first = list?.[0]; const u = first ? api.hiArt(first.cover) : '';

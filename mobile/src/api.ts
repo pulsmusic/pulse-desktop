@@ -4,6 +4,7 @@
 let jpeg: any = null;
 try { jpeg = require('jpeg-js'); } catch { jpeg = null; }
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PixelRatio, Platform, Dimensions } from 'react-native';
 import { ymSearch } from './yandex';
 import { ymLocal } from './ymLocal';
 import type { YTrack } from './yandex';
@@ -75,10 +76,15 @@ setTimeout(async () => {
 const capped = <V,>(m: Map<string, V>, n: number) => { while (m.size > n) m.delete(m.keys().next().value as string); };
 export type Track = { id: string; title: string; artist: string; album?: string; cover: string; url: string; artistId?: number; albumId?: number; dur?: number; explicit?: boolean; genre?: string; year?: number };
 // размер обложки: у iTunes — «…/600x600bb.jpg», у Яндекса — «avatars.yandex.net/…/600x600» (только 200/400/600/1000)
-const ySize = (n: number) => (n <= 200 ? 200 : n <= 400 ? 400 : n <= 600 ? 600 : 1000);
+// с запасом ~13 %: картинка 600 на месте 680 точек выглядит так же, а весит в памяти втрое меньше, чем 1000
+const ySize = (n: number) => (n <= 226 ? 200 : n <= 452 ? 400 : n <= 680 ? 600 : 1000);
 const sized = (u: string | undefined, n: number) => { const s = u || ''; if (s.includes('avatars.yandex.net')) return s.replace(/\/\d+x\d+$/, `/${ySize(n)}x${ySize(n)}`); return s.replace(/\d+x\d+(bb)?(-\d+)?(?=\.\w+$)/, `${n}x${n}bb`); };
 const big = (u?: string) => sized(u, 600);
-export const hiArt = (u?: string) => sized(u, 1200);   // для больших обложек (полный плеер, альбом)
+// Обложка ровно под место на экране: dp (точки) × плотность экрана. Картинка 1000×1000 занимает в памяти 4 МБ,
+// 600×600 — 1,4 МБ, 400×400 — 0,6 МБ: на телефонах с 3–4 ГБ это главное, что держит приложение лёгким.
+export const artPx = (u: string | undefined, dp: number) => sized(u, Math.round(dp * PixelRatio.get()));
+// большие обложки (полный плеер, альбом): на iPhone — максимум, на Android — по ширине экрана
+export const hiArt = (u?: string) => (Platform.OS === 'android' ? artPx(u, Math.min(Dimensions.get('window').width, 440)) : sized(u, 1200));
 export const bigArt = big;
 export const smallArt = (u?: string) => sized(u, 160);   // для строк списков и мини-плеера (48 pt) — в 14 раз меньше пикселей, чем 600
 // «Название - Single» / «Название - EP» → «Название»; тип релиза определяем по подписи и числу треков

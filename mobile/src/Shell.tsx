@@ -25,7 +25,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 // Номер сборки. Все файлы папки src должны быть из одной сборки — иначе приложение покажет подсказку, а не ошибку.
 export const BUILD = 64;
 // для проверки, что все файлы папки src — из одной сборки
-import { poke, useAwake, isAwake } from './ui';
+import { poke, useAwake, isAwake, Pic, prefetchPic } from './ui';
 // касание любого места экрана — «будит» фон (см. режим покоя в ui.tsx); палец при этом никому не перехватываем
 const wakeCapture = () => { poke(); return false; };
 import * as M_ui from './ui'; import * as M_player from './player'; import * as M_pulseTab from './PulseTab';
@@ -125,10 +125,27 @@ function SoftEdge({ height, strong }: { height: number; strong?: boolean }) {
   );
 }
 
+// Длинные списки (любимые, плейлисты, альбомы, треки артиста) строятся частями: сначала 30 строк, следующие 30 —
+// когда до конца нарисованного осталось меньше 2,5 экрана. Сотни строк с обложками не держатся в памяти сразу.
+type MoreApi = { sub: (f: () => void) => () => void };
+const MoreCtx = React.createContext<MoreApi | null>(null);
+const ROWS_STEP = 30;
 // Вертикальная прокрутка экрана уходит под верхнюю панель (флаг screen), горизонтальные ленты — как обычно
 const ScrollView = (p: any) => {
   const top = useTopPad() + 56;
-  if (p.screen) { const C: any = p.anim ? Animated.ScrollView : RNScroll; return <C showsVerticalScrollIndicator={false} scrollEventThrottle={16} {...p} contentContainerStyle={{ paddingTop: top, paddingBottom: BOTTOM }} />; }
+  const subs = useRef(new Set<() => void>());
+  const more = useMemo<MoreApi>(() => ({ sub: (f) => { subs.current.add(f); return () => { subs.current.delete(f); }; } }), []);
+  const near = (e: any) => { const n = e?.nativeEvent; if (n && n.contentOffset.y + n.layoutMeasurement.height * 3.5 >= n.contentSize.height) subs.current.forEach((f) => f()); };
+  if (p.screen) {
+    const C: any = p.anim ? Animated.ScrollView : RNScroll;
+    return (
+      <MoreCtx.Provider value={more}>
+        <C showsVerticalScrollIndicator={false} scrollEventThrottle={16} {...p} contentContainerStyle={{ paddingTop: top, paddingBottom: BOTTOM }}
+          onScrollEndDrag={(e: any) => { near(e); p.onScrollEndDrag?.(e); }} onMomentumScrollEnd={(e: any) => { near(e); p.onMomentumScrollEnd?.(e); }}
+          onScrollBeginDrag={(e: any) => { near(e); p.onScrollBeginDrag?.(e); }} />
+      </MoreCtx.Provider>
+    );
+  }
   return <RNScroll {...p} />;
 };
 
@@ -269,7 +286,10 @@ const Rows = ({ list, open, noFav, selfId, noCover, queue, from }: { list: Track
   // строки запоминаются (memo) — поэтому нажатие берёт актуальный список через ref, а не тот, что был при первой отрисовке
   const lr = useRef(list); lr.current = list; const qr = useRef(queue); qr.current = queue; const fr = useRef(from); fr.current = from;
   const play = (i: number) => { const q = qr.current; if (!q) return P.go(lr.current, i, fr.current); const j = q.findIndex((x) => x.id === lr.current[i]?.id); P.go(j >= 0 ? q : lr.current, j >= 0 ? j : i, fr.current); };
-  return <>{list.map((t, i) => <Row key={t.id + i} t={t} i={i} noFav={noFav} noCover={noCover} fav={P.isFav(t)} onFav={() => P.toggleFav(t)} onPress={() => play(i)} onLongPress={() => addTo(t)}
+  const more = useContext(MoreCtx); const [lim, setLim] = useState(ROWS_STEP);
+  useEffect(() => (more ? more.sub(() => setLim((l) => (l < lr.current.length ? l + ROWS_STEP : l))) : undefined), [more]);
+  const shown = more && list.length > lim ? list.slice(0, lim) : list;
+  return <>{shown.map((t, i) => <Row key={t.id + i} t={t} i={i} noFav={noFav} noCover={noCover} fav={P.isFav(t)} onFav={() => P.toggleFav(t)} onPress={() => play(i)} onLongPress={() => addTo(t)}
     onArtist={() => (t.artistId && t.artistId !== selfId ? open({ k: 'artist', id: t.artistId, name: t.artist }) : null)} />)}</>;
 };
 
@@ -731,11 +751,11 @@ function PlCover({ pl, size, r = 22, fav, recent }: { pl?: Playlist; size: numbe
     : <LinearGradient colors={(T as any).duo ? (rev ? [(T as any).accent2, T.accent] : [T.accent, (T as any).accent2]) : rev ? [T.accent, T.accentSoft] : [T.accentSoft, T.accent]} start={rev ? { x: 0, y: 1 } : { x: 0, y: 0 }} end={rev ? { x: 1, y: 0 } : { x: 1, y: 1 }} style={[box, { alignItems: 'center', justifyContent: 'center' }]}>{child}</LinearGradient>;
   if (fav) return grad(<FavArt size={size} />);
   if (recent) return grad(<RecentArt size={size} />, true);
-  if (pl?.cover) return <View style={box}><Image source={{ uri: pl.cover }} style={{ width: size, height: size }} /></View>;
+  if (pl?.cover) return <View style={box}><Pic uri={pl.cover} style={{ width: size, height: size }} /></View>;
   const cs = Array.from(new Set((pl?.tracks || []).map((t) => t.cover))).slice(0, 4);
-  const art = (u: string) => (size > 120 ? api.bigArt(u) : api.smallArt(u));
-  if (cs.length >= 4) return <View style={[box, { flexDirection: 'row', flexWrap: 'wrap' }]}>{cs.map((c, i) => <Image key={i} source={{ uri: art(c) }} style={{ width: size / 2, height: size / 2 }} />)}</View>;
-  if (cs.length) return <View style={box}><Image source={{ uri: art(cs[0]) }} style={{ width: size, height: size }} /></View>;
+  const art = (u: string, dp: number) => api.artPx(u, dp);
+  if (cs.length >= 4) return <View style={[box, { flexDirection: 'row', flexWrap: 'wrap' }]}>{cs.map((c, i) => <Pic key={i} uri={art(c, size / 2)} style={{ width: size / 2, height: size / 2 }} />)}</View>;
+  if (cs.length) return <View style={box}><Pic uri={art(cs[0], size)} style={{ width: size, height: size }} /></View>;
   return grad(<LStar w={size * 0.5} color="#ffffff" />);
 }
 
@@ -1455,7 +1475,7 @@ function AboutArtist({ name, photo, fallback, genre, first, fans }: { name: stri
       <View style={{ borderRadius: 22, overflow: 'hidden', backgroundColor: T.bgBase, borderWidth: T.dark ? 1 : 0, borderColor: 'rgba(255,255,255,0.08)' }}>
         {/* фото и переход в фон */}
         <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: ph }}>
-          <Image source={{ uri: src }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <Pic uri={src} style={StyleSheet.absoluteFill} />
           <LinearGradient colors={['rgba(0,0,0,0.38)', 'rgba(0,0,0,0)']} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: Math.round(ph * 0.22) }} />
           <LinearGradient colors={fade.colors as any} locations={fade.locations as any} style={{ position: 'absolute', left: 0, right: 0, top: textTop - Math.round(cw * 0.42), height: Math.round(cw * 0.42) }} />
           <View style={{ position: 'absolute', left: 0, right: 0, top: textTop, bottom: 0, backgroundColor: T.bgBase }} />
@@ -2278,7 +2298,12 @@ function LiveBg({ u }: { u: string }) {
 function CoverFadeLayer({ u, first }: { u: string; first: boolean }) {
   const o = useSharedValue(first ? 1 : 0);
   const st = useAnimatedStyle(() => ({ opacity: o.value, transform: [{ scale: 1.05 - 0.05 * o.value }] }));
-  return <Animated.Image source={{ uri: u }} onLoad={() => { if (!first) o.value = withTiming(1, { duration: 750, easing: Easing.inOut(Easing.cubic) }); }} style={[{ position: 'absolute', width: '100%', height: '100%' }, st]} />;
+  // картинка — через общий кэш (expo-image): туда же заранее скачивается обложка следующего трека
+  return (
+    <Animated.View style={[{ position: 'absolute', width: '100%', height: '100%' }, st]}>
+      <Pic uri={u} style={{ width: '100%', height: '100%' }} onLoad={() => { if (!first) o.value = withTiming(1, { duration: 750, easing: Easing.inOut(Easing.cubic) }); }} />
+    </Animated.View>
+  );
 }
 function CoverStack({ u }: { u: string }) {
   const layers = useLayers(u);
@@ -2661,7 +2686,7 @@ function TabPane({ active, covered, under, shift, children }: { active: boolean;
 // deep — экран лежит под двумя и более другими: его не видно даже при жесте «назад», поэтому он
 // уезжает за край (не рисуется), а его состояние и прокрутка сохраняются.
 const PUSH = Easing.bezier(0.32, 0.72, 0, 1);   // мягкий «доезд» как у системных экранов iOS
-function StackScreen({ top, under, deep, drag, shift, leave, onGone, children }: { top: boolean; under?: boolean; deep?: boolean; drag: any; shift: any; leave: null | 'anim' | 'instant'; onGone: () => void; children: React.ReactNode }) {
+function StackScreen({ top, under, deep, far, drag, shift, leave, onGone, children }: { top: boolean; under?: boolean; deep?: boolean; far?: boolean; drag: any; shift: any; leave: null | 'anim' | 'instant'; onGone: () => void; children: React.ReactNode }) {
   const { width } = useWin();
   const tx = useSharedValue(width);
   useEffect(() => { tx.value = withTiming(0, { duration: 460, easing: PUSH }); }, []);
@@ -2680,7 +2705,7 @@ function StackScreen({ top, under, deep, drag, shift, leave, onGone, children }:
   return (
     <VisCtx.Provider value={vis}>
       <Animated.View pointerEvents={leave ? 'none' : 'auto'} style={[StyleSheet.absoluteFill, { zIndex: 10, backgroundColor: T0.bgBase, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 18, shadowOffset: { width: -6, height: 0 } }, st]}>
-        {children}
+        {far ? null : children}
         {under && <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: '#000', zIndex: 50 }, dim]} />}
       </Animated.View>
     </VisCtx.Provider>
@@ -2869,7 +2894,7 @@ function ShellMain() {
       ))}
 
       {stack.map((s, i) => (
-        <StackScreen key={'s' + i} top={i === n - 1} under={i === n - 2} deep={i < n - 2} drag={x} shift={shift} leave={leaving && leaving.i === i ? leaving.m : null} onGone={() => gone(i)}>
+        <StackScreen key={'s' + i} top={i === n - 1} under={i === n - 2} deep={i < n - 2} far={i < n - 4} drag={x} shift={shift} leave={leaving && leaving.i === i ? leaving.m : null} onGone={() => gone(i)}>
           <StackBody s={s} open={open} back={back} onTheme={themeAt} onPulse={onPulse} />
         </StackScreen>
       ))}
