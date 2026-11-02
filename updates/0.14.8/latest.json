@@ -1,0 +1,15 @@
+{
+  "version": "0.14.8",
+  "date": "2026-11-02",
+  "notes": [
+    "Добавлены кольца у исполнителей на главной: сколько их треков вы прослушали",
+    "Добавлена отдельная страница чарта со всеми треками",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.8/pulse-app-0.14.8.zip",
+  "sha256": "6cf61ee30fd14e442862b090ec0fd473a02fd19fc4d23878d04ed14a39c1d670",
+  "size": 691792,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
