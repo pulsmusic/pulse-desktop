@@ -1,0 +1,15 @@
+{
+  "version": "0.14.12",
+  "date": "2026-11-02",
+  "notes": [
+    "Строка поиска стала «островком»: на пару секунд показывает играющий трек, лайк, громкость и работу ИИ",
+    "Островок меняется только в длину — плавно и под содержимое",
+    "Новая версия теперь появляется прямо в строке поиска с кнопкой «Обновить»"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.12/pulse-app-0.14.12.zip",
+  "sha256": "24bc04d2ecd3a7ce574f5c4e89c9acfc1fe2183e4ad6e10777053855bc8825f7",
+  "size": 694720,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
