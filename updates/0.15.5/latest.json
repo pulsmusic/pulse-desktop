@@ -1,0 +1,14 @@
+{
+  "version": "0.15.5",
+  "date": "2026-11-02",
+  "notes": [
+    "Новая анимация запуска — как на телефоне",
+    "Главная открывается уже загруженной: обложки и подборки готовятся во время анимации"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.5/pulse-app-0.15.5.zip",
+  "sha256": "defd46d1fea5c5ff8fc91a8d7b9c12add9be18d61266d6bb86749b2c859c2f3c",
+  "size": 739320,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
