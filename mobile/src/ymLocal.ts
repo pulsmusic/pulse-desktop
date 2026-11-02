@@ -236,6 +236,38 @@ async function health(tok: string) {
   } catch (e: any) { return { ok: true, yandex: false, error: String((e && e.message) || e).slice(0, 300) }; }
 }
 
+// ---------- «Мне нравится» — общее «Любимое» с версией для ПК (тот же аккаунт Яндекса) ----------
+// Только с токеном и без запасного «без входа»: эти данные принадлежат аккаунту.
+const uids = new Map<string, string>();
+async function myUid(t: string) {
+  if (uids.has(t)) return uids.get(t)!;
+  const r = await raw('/account/status', t);
+  const uid = String((r && r.account && r.account.uid) || '');
+  if (!uid) throw new HttpErr('Яндекс не отдал номер аккаунта', 502);
+  uids.set(t, uid); return uid;
+}
+export async function likesList(tok: string): Promise<{ uid: string; ids: { id: string; album: string; ts: string }[] }> {
+  const t = cleanToken(tok); if (!t) throw new HttpErr('Нужен вход в Яндекс Музыку', 401);
+  const uid = await myUid(t);
+  const r = await raw('/users/' + uid + '/likes/tracks', t, { ms: 20000 });
+  const l: any[] = (r && r.library && r.library.tracks) || [];
+  return { uid, ids: l.map((x) => ({ id: String(x.id).split(':')[0], album: x.albumId ? String(x.albumId) : '', ts: String(x.timestamp || '') })).filter((x) => /^\d+$/.test(x.id)) };
+}
+// треки по номерам («номер:альбом»), по 100 за запрос — в «iTunes-виде», как остальные ответы
+export async function tracksByIds(tok: string, ids: string[]): Promise<any[]> {
+  const t = cleanToken(tok); const out: any[] = [];
+  for (let i = 0; i < ids.length; i += 100) {
+    const r = await raw('/tracks', t, { method: 'POST', form: { 'track-ids': ids.slice(i, i + 100).join(','), 'with-positions': 'false' }, ms: 20000 });
+    out.push(...clean(((r as any[]) || []).map(song)));
+  }
+  return out;
+}
+export async function likesSet(tok: string, ids: string[], on: boolean) {
+  const t = cleanToken(tok); if (!t || !ids.length) return;
+  const uid = await myUid(t);
+  for (let i = 0; i < ids.length; i += 100) await raw('/users/' + uid + '/likes/tracks/' + (on ? 'add-multiple' : 'remove'), t, { method: 'POST', form: { 'track-ids': ids.slice(i, i + 100).join(',') } });
+}
+
 // путь как у сервера → ответ как у сервера (бросает ошибку с полем status, если Яндекс не ответил)
 export async function ymLocal(path: string, token: string): Promise<any> {
   // разбираем сами: URL в React Native умеет не всё (pathname/searchParams)

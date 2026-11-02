@@ -9,6 +9,7 @@ import { hiArt, smallArt, YB, streamUrl, streamErr } from './api';
 import { playable, preload, forget, dropImage } from './audioCache';
 import { LIGHT, DARK, withAccent, blackOf } from './theme';
 import { similar, key as tkey } from './pulse';
+import { useLikeSync } from './ysync';
 // заранее — только на диск (expo-image), не в оперативную память: картинка появится мгновенно, но не держится в памяти зря
 let XI: any = null; try { XI = require('expo-image').Image; } catch { XI = null; }
 const prefetch = (u?: string) => { if (!u) return; try { if (XI && XI.prefetch) XI.prefetch(u, 'disk'); else Image.prefetch(u).catch(() => {}); } catch {} };
@@ -285,6 +286,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     toggleInList: (id: string, t: Track) => setLists((l) => l.map((p) => (p.id !== id ? p : p.tracks.some((x) => same(x, t)) ? { ...p, tracks: p.tracks.filter((x) => !same(x, t)) } : { ...p, tracks: [...p.tracks, t] }))),
   }), [player]);
   // проверка «в любимом» — через набор id (быстро даже при сотнях любимых треков)
+  // общее «Любимое» с ПК — через «Мне нравится» Яндекс Музыки (ysync.ts)
+  useLikeSync(favs, setFavs, ready);
   const favIds = useMemo(() => new Set(favs.map((x) => x.id)), [favs]);
   const value = useMemo(() => ({
     ...act,

@@ -6,7 +6,7 @@ try { jpeg = require('jpeg-js'); } catch { jpeg = null; }
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PixelRatio, Platform, Dimensions } from 'react-native';
 import { ymSearch } from './yandex';
-import { ymLocal } from './ymLocal';
+import { ymLocal, likesList, tracksByIds, likesSet } from './ymLocal';
 import type { YTrack } from './yandex';
 const IT = 'https://itunes.apple.com/';
 
@@ -669,3 +669,9 @@ export async function wave(cfg: { mood: string; kind: string; lang?: string }, a
   const d = await yj(`/wave?mood=${mood}&kind=${kind}&lang=${lang}&after=${encodeURIComponent(after)}`, 12000).catch(() => null);
   return L((d && d.results) || []);
 }
+
+// ---------- общее «Любимое» с ПК: «Мне нравится» Яндекс Музыки (см. ysync.ts) ----------
+export const yLikes = async () => likesList(await ymToken());
+export const yTracks = async (ids: string[]) => L(await tracksByIds(await ymToken(), ids));
+export const yLikeSet = async (ids: string[], on: boolean) => likesSet(await ymToken(), ids, on);
+export const ySyncOn = async () => YLOCAL && !!(await ymToken());

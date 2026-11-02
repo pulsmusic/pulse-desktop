@@ -1,0 +1,14 @@
+{
+  "version": "0.15.2",
+  "date": "2026-11-02",
+  "notes": [
+    "Любимое теперь общее с телефоном — через «Мне нравится» Яндекс Музыки",
+    "Лайки с телефона появляются на компьютере сами, без регистрации"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.2/pulse-app-0.15.2.zip",
+  "sha256": "04e37a1163902f8f85c8d104fcf85e29d5d2c28312fd4d02addb53cd21e8b1ce",
+  "size": 701225,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
