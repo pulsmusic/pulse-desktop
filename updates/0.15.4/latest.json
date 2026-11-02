@@ -1,0 +1,14 @@
+{
+  "version": "0.15.4",
+  "date": "2026-11-02",
+  "notes": [
+    "Вкладки переключаются мгновенно — Главная и «Моя музыка» остаются в памяти",
+    "Приложение стало отзывчивее: меньше лишних перерисовок"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.4/pulse-app-0.15.4.zip",
+  "sha256": "7e84596381371ea4b16453d617a1be959eefbf47fb59db3beeb3a1bdd5dacd7e",
+  "size": 701899,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
