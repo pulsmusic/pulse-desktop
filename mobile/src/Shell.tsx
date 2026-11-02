@@ -11,6 +11,8 @@ import * as upd from './updater';
 import * as ota from './ota';
 import { MenuHost, openMenu, openDialog } from './menu';
 import { useFollow, toggleFollow } from './follow';
+import { BootSplash } from './Splash';
+import { bootReady } from './boot';
 import { useSleep, sleepSet, sleepGet, sleepLabel } from './sleep';
 import { RingDot, MixCard, MixCover, BestCard, BestCover, YplCard, useBestArtists, CARD, tracksWord, useCoverTint } from './Home2';
 import { PcIcon, Verified } from './PcIcons';
@@ -381,6 +383,8 @@ function Home({ open, onPulse }: any) {
   // с Яндексом новинки не зависят от чарта — грузятся одновременно с ним
   const nw = useAsync(() => (api.YB ? api.newReleases('ru', []) : ru.v ? api.newReleases('ru', ru.v) : Promise.resolve(null)), api.YB ? [rk] : [ru.v], true);
   const land = useAsync(() => api.landing(), [rk], true);
+  // стартовая страница получила первые данные — заставка может уходить
+  useEffect(() => { if (ru.v || ru.err) bootReady(); }, [!!ru.v, ru.err]);
   const refresh = () => { setRf(true); api.clearCache(); setRk((k) => k + 1); setTimeout(() => setRf(false), 900); };
   // один артист — один кружок: сравниваем по основному имени (без feat./соавторов) и по id
   const arts = useMemo(() => {
@@ -3100,7 +3104,7 @@ const MODS: [string, any][] = [['ui.tsx', M_ui], ['player.tsx', M_player], ['Pul
 const STALE = MODS.filter(([, m]) => (m as any)?.BUILD !== BUILD).map(([n]) => n);
 export function Shell() {
   if (STALE.length) return <StaleFiles files={STALE} />;
-  return <ShellMain />;
+  return <View style={{ flex: 1 }}><ShellMain /><BootSplash /></View>;
 }
 function StaleFiles({ files }: { files: string[] }) {
   return (

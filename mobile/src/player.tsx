@@ -110,6 +110,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     // музыка играет и в фоне, и на заблокированном экране (Android — через уведомление плеера)
     setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true, interruptionMode: 'doNotMix' } as any).catch(() => setAudioModeAsync({ playsInSilentMode: true }).catch(() => {}));
     AsyncStorage.getItem('pulse').then((v) => { if (v) { const d = JSON.parse(v); setFavs(d.favs || []); setLists(d.lists || []); setRecent(uniq(d.recent || [])); if (d.profile) setProfile(d.profile); if (d.dark) setDark(true); if (d.accent) setAccent(d.accent); if (d.black) setBlack(true); if (d.auto === false) setAuto(false); } }).catch(() => {}).finally(() => setReady(true));
+    AsyncStorage.getItem('pulse_now').then((v) => {
+      if (!v) return; const d = JSON.parse(v); if (!d || !Array.isArray(d.q) || !d.q[d.i]) return;
+      if (S.current.q.length) return;   // уже что-то включили, пока читали
+      setQ(d.q); setI(d.i); setSrc(d.src); resumeAt.current = d.pos > 3 && d.pos < (d.q[d.i].dur || 1e9) - 5 ? d.pos : 0;
+    }).catch(() => {});
     AsyncStorage.getItem('pulse_stats').then((v) => { if (v) { const d = JSON.parse(v); if (d && d.tracks) statsRef.current = pruneStats(d); } }).catch(() => {});
   }, []);
 
@@ -140,7 +145,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // preview — Яндекс отдал только 30-секундный фрагмент (без входа / без Плюса): плеер честно это показывает
   const [preview, setPreview] = useState(false); const [playErr, setPlayErr] = useState(''); const fails = useRef(0);
   const startN = useRef(0);
+  // Последний трек после перезапуска (или обновления): очередь и место сохраняются; при запуске трек стоит
+  // в мини-плеере на паузе, звук не грузится, пока не нажали «играть» — тогда продолжаем с того же места
+  const hasSrc = useRef(false); const resumeAt = useRef(0);
   const start = useCallback((t: Track, direct?: boolean) => {
+    hasSrc.current = true;
     if (YB) {
       // режим Яндекса: ссылку на звук берём прямо перед проигрыванием (они живут недолго). Пока она едет —
       // прежний трек замолкает; пришла ссылка на другой трек (успели переключить) — её не используем
@@ -195,6 +204,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if ((st.currentTime || 0) > 0.15 && (st.currentTime || 0) < el + 1) { w.ok = true; clearTimeout(w.timer); }
   }, [st.currentTime]);
   useEffect(() => () => clearTimeout(watch.current.timer), []);
+  // звук загрузился — перематываем на место, где остановились в прошлый раз
+  useEffect(() => {
+    if (!st.isLoaded || !resumeAt.current) return;
+    const s = resumeAt.current; resumeAt.current = 0;
+    try { player.seekTo(s); } catch {}
+  }, [st.isLoaded]);
 
   useEffect(() => {
     if (!st.didJustFinish) return;
@@ -235,6 +250,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [cur?.id, nx1?.id, nx2?.id]);
 
   const curRef = useRef<Track | undefined>(undefined); curRef.current = cur;
+  const saveNow = useCallback(() => {
+    const { q, i, src } = S.current; if (!q[i]) return;
+    // очередь «Моего пульса» бывает длинной — храним окно вокруг текущего трека
+    const a = Math.max(0, i - 20), qq = q.slice(a, i + 80);
+    let pos = 0; try { pos = hasSrc.current ? player.currentTime || 0 : resumeAt.current; } catch {}
+    AsyncStorage.setItem('pulse_now', JSON.stringify({ q: qq, i: i - a, src, pos: Math.round(pos) })).catch(() => {});
+  }, [player]);
+  useEffect(() => { if (ready && cur) saveNow(); }, [cur?.id, ready]);
+  useEffect(() => { if (!st.playing) { if (hasSrc.current) saveNow(); return; } const iv = setInterval(saveNow, 10000); return () => clearInterval(iv); }, [st.playing]);
+  useEffect(() => { const sub = AppState.addEventListener('change', (s) => { if (s !== 'active') saveNow(); }); return () => sub.remove(); }, []);
   useEffect(() => {
     if (!st.playing) { flushStats(); return; }
     let n = 0;
@@ -260,8 +285,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const listsRef = useRef(lists); listsRef.current = lists;
   const act = useMemo(() => ({
     toggleDark: () => setDark((x) => !x), setAccent, setBlack,
-    toggle: () => { if (playingRef.current) { userPaused.current = true; player.pause(); } else { userPaused.current = false; player.play(); } },
-    seek: (s: number) => player.seekTo(s),
+    toggle: () => {
+      if (playingRef.current) { userPaused.current = true; player.pause(); return; }
+      userPaused.current = false;
+      // трек восстановлен после перезапуска, звука ещё нет — загружаем и играем с сохранённого места
+      if (!hasSrc.current) { const { q, i } = S.current; const t = q[i]; if (t) { watch.current = { t, at: Date.now(), tries: 0, ok: false, timer: watch.current.timer }; start(t); arm(); } return; }
+      player.play();
+    },
+    seek: (s: number) => { if (!hasSrc.current) { resumeAt.current = s; return; } player.seekTo(s); },
     // точное время трека прямо сейчас (для живого текста — читается каждый кадр, без перерисовок)
     now: (): number => { try { return player.currentTime || 0; } catch { return 0; } },
     setVolume: (v: number) => { setVol(v); player.volume = v; },
@@ -284,7 +315,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setLists((l) => l.filter((p) => p.id !== id));
     },
     toggleInList: (id: string, t: Track) => setLists((l) => l.map((p) => (p.id !== id ? p : p.tracks.some((x) => same(x, t)) ? { ...p, tracks: p.tracks.filter((x) => !same(x, t)) } : { ...p, tracks: [...p.tracks, t] }))),
-  }), [player]);
+  }), [player, start, arm]);
   // проверка «в любимом» — через набор id (быстро даже при сотнях любимых треков)
   // общее «Любимое» с ПК — через «Мне нравится» Яндекс Музыки (ysync.ts)
   useLikeSync(favs, setFavs, ready);
@@ -296,11 +327,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     // для совместимости: актуальное значение, но без подписки (подписка — usePlaying())
     get playing() { return playingRef.current; },
     volume, shuffle, rep,
-    favs, recent, profile, auto, autoFrom, preview, playErr,
+    favs, recent, profile, auto, autoFrom, preview, playErr, ready,
     isFav: (t: Track) => favIds.has(t.id),
     lists,
     inList: (id: string, t: Track) => !!lists.find((p) => p.id === id)?.tracks.some((x) => same(x, t)),
-  }), [act, T, dark, black, accent, q, i, src, go, step, extend, setUpcoming, volume, shuffle, rep, favs, favIds, lists, recent, profile, auto, autoFrom, preview, playErr]);
+  }), [act, T, dark, black, accent, q, i, src, go, step, extend, setUpcoming, volume, shuffle, rep, favs, favIds, lists, recent, profile, auto, autoFrom, preview, playErr, ready]);
   const pos = st.currentTime || 0, dur = st.duration || 30;
   const prog = useMemo(() => ({ pos, dur }), [pos, dur]);
   return (
