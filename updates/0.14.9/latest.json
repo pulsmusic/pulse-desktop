@@ -1,0 +1,14 @@
+{
+  "version": "0.14.9",
+  "date": "2026-11-02",
+  "notes": [
+    "Плеер запоминает трек и место в нём: после перезапуска или обновления можно продолжить с того же момента",
+    "Исправления ошибок и улучшения стабильности"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.14.9/pulse-app-0.14.9.zip",
+  "sha256": "3d18d56aa6f592bbcdd5b00fc24f8dee649e2089efb73a365fec913f9b526550",
+  "size": 692163,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
