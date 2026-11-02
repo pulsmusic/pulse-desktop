@@ -9,7 +9,7 @@ import Animated, { useSharedValue, useAnimatedStyle, useAnimatedProps, useDerive
 import * as api from './api';
 import * as upd from './updater';
 import * as ota from './ota';
-import { MenuHost, openMenu } from './menu';
+import { MenuHost, openMenu, openDialog } from './menu';
 import { APP_VERSION } from './version';
 import type { Track } from './api';
 // чарт и новинки главной начинают грузиться сразу при запуске, ещё до первого кадра
@@ -823,10 +823,10 @@ function PlCard({ pl, i, cw, meta, open }: { pl: Playlist; i: number; cw: number
   const remove = () => {
     if (edit || asking.current) return; asking.current = true; tick();
     const done = () => { asking.current = false; };
-    Alert.alert('Удалить плейлист?', `«${pl.name}» исчезнет из «Моей музыки». Треки в «Любимом» и других плейлистах останутся.`, [
-      { text: 'Отмена', style: 'cancel', onPress: done },
-      { text: 'Удалить', style: 'destructive', onPress: () => { hap('warning'); P.deleteList(pl.id); } },
-    ], { cancelable: true, onDismiss: done });
+    openDialog({ danger: true, icon: 'trash-outline', title: 'Удалить плейлист?', text: `«${pl.name}» исчезнет из «Моей музыки». Треки в «Любимом» и других плейлистах останутся.`, onClose: done, buttons: [
+      { text: 'Отмена', kind: 'sec', onPress: done },
+      { text: 'Удалить', kind: 'dng', onPress: () => { done(); P.deleteList(pl.id); } },
+    ] });
   };
   return (
     <Animated.View entering={i < 14 ? rise(Math.min(i, 8) * 40) : undefined} exiting={FadeOut.duration(220).easing(EASE_IO)}>
@@ -872,10 +872,10 @@ function PlaylistScreen({ id, fav, recent, fresh, open, back }: any) {
   };
   const del = () => {
     if (!pl) return;
-    Alert.alert('Удалить плейлист?', `«${pl.name}» исчезнет из «Моей музыки».`, [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: () => { hap('warning'); gone.current = true; back(); setTimeout(() => P.deleteList(pl.id), 420); } },
-    ]);
+    openDialog({ danger: true, icon: 'trash-outline', title: 'Удалить плейлист?', text: `«${pl.name}» исчезнет из «Моей музыки». Треки в «Любимом» и других плейлистах останутся.`, buttons: [
+      { text: 'Отмена', kind: 'sec' },
+      { text: 'Удалить', kind: 'dng', onPress: () => { gone.current = true; back(); setTimeout(() => P.deleteList(pl.id), 420); } },
+    ] });
   };
   // нажатие на обложку — всё управление плейлистом
   const menu = () => {
@@ -1913,10 +1913,10 @@ function useUpdateNag() {
     const run = async () => {
       if (shown || Date.now() - last < 600e3) return; last = Date.now();
       const o = await ota.otaFetch(); if (!o) return; shown = true;
-      Alert.alert('Обновление готово', (o.notes.length ? o.notes.map((n) => '• ' + n).join('\n') + '\n\n' : '') + 'Перезапустить сейчас? Иначе оно включится при следующем открытии.', [
-        { text: 'Позже', style: 'cancel' },
-        { text: 'Перезапустить', onPress: () => { ota.otaRestart(); } },
-      ]);
+      openDialog({ icon: 'sparkles', title: 'Обновление готово', sub: 'Включится за секунду', list: o.notes, buttons: [
+        { text: 'Позже', kind: 'sec' },
+        { text: 'Перезапустить', kind: 'pri', onPress: () => { ota.otaRestart(); } },
+      ] });
     };
     const t0 = setTimeout(run, 3000);
     const sub = AppState.addEventListener('change', (s) => { if (s === 'active') run(); });
@@ -1927,10 +1927,10 @@ function useUpdateNag() {
     let asked = '';
     const run = async () => {
       const u = await upd.checkUpdate(); if (!u || asked === u.version) return; asked = u.version;
-      Alert.alert('Вышла версия ' + u.version, (u.notes.length ? u.notes.map((n) => '• ' + n).join('\n') + '\n\n' : '') + 'Обновить сейчас? Скачается и откроется установка.', [
-        { text: 'Позже', style: 'cancel' },
-        { text: 'Обновить', onPress: () => { upd.installUpdate(u, () => {}).catch((e) => Alert.alert('Не получилось', String(e?.message || e))); } },
-      ]);
+      openDialog({ icon: 'download-outline', title: 'Вышла версия ' + u.version, sub: 'Скачается и откроется установка', list: u.notes, buttons: [
+        { text: 'Позже', kind: 'sec' },
+        { text: 'Обновить', kind: 'pri', onPress: () => { upd.installUpdate(u, () => {}).catch((e) => openDialog({ danger: true, icon: 'alert-circle-outline', title: 'Не получилось', text: String(e?.message || e), buttons: [{ text: 'Понятно', kind: 'sec' }] })); } },
+      ] });
     };
     const t = setTimeout(run, 15000); const h = setInterval(run, 3600e3);
     return () => { clearTimeout(t); clearInterval(h); };
