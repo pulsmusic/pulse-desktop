@@ -649,6 +649,9 @@ export function streamUrl(t: Track): Promise<{ url: string; preview: boolean } |
 }
 // заранее, при касании трека в списке (до того как палец отпустили): ссылка уже едет, когда трек включится
 export const warmStream = (t: Track) => { if (YB) streamUrl(t).catch(() => null); };
+// есть ли вход в Яндекс (тогда фрагмент — случайность, и стоит попробовать получить полный звук ещё раз)
+export const ymSignedIn = async () => !!(await ymToken());
+export const forgetStream = (t: Track) => { const id = String(t.url || '').startsWith('ym:') ? String(t.url).slice(3) : ''; if (id) streamMem.delete(id); };
 async function streamUrl0(t: Track): Promise<{ url: string; preview: boolean } | null> {
   if (!YB) return null; streamErr = '';
   let id = String(t.url || '').startsWith('ym:') ? String(t.url).slice(3) : '';
@@ -666,7 +669,8 @@ async function streamUrl0(t: Track): Promise<{ url: string; preview: boolean } |
     }
   }
   // полная ссылка живёт минуту; фрагмент — 10 с (вдруг Яндекс отказал случайно — следующий раз спросим снова)
-  const hit = streamMem.get(id); if (hit && Date.now() - hit.at < (hit.v.preview ? 10000 : 50000)) return hit.v;
+  // запоминаем только полный звук — фрагмент всегда спрашиваем заново
+  const hit = streamMem.get(id); if (hit && !hit.v.preview && Date.now() - hit.at < 50000) return hit.v;
   if (YLOCAL) {
     try { const v: any = await ymLocal('/stream/' + id, await ymToken()); if (!v?.url) return null; capped(streamMem, 60); streamMem.set(id, { at: Date.now(), v: { url: v.url, preview: !!v.preview } }); return streamMem.get(id)!.v; }
     catch (e: any) { streamErr = String(e?.message || 'Яндекс не отдал звук'); return null; }

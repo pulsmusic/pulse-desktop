@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSharedValue } from 'react-native-reanimated';
 import { analyze, NB } from './spectrum';
 import type { Track } from './api';
-import { hiArt, smallArt, YB, streamUrl, streamErr } from './api';
+import { hiArt, smallArt, YB, streamUrl, streamErr, ymSignedIn, forgetStream } from './api';
 import { playable, preload, forget, dropImage } from './audioCache';
 import { LIGHT, DARK, withAccent, blackOf } from './theme';
 import { similar, key as tkey } from './pulse';
@@ -174,6 +174,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         // очередь «бесконечно пролистывалась». После этого останавливаемся и показываем причину
         if (!s) { setPreview(false); fails.current += 1; setPlayErr(streamErr || 'Не удалось получить звук'); if (fails.current < 3 && S.current.q.length > 1) stepRef.current(1); return; }
         fails.current = 0; setPlayErr(''); setPreview(s.preview); player.replace({ uri: s.url }); player.play(); lockScreen(player, t);
+        // пришёл фрагмент, хотя вход в Яндекс есть: тихо спрашиваем полный звук ещё раз и, как только он есть,
+        // подменяем на том же месте — без паузы и без перезапуска трека
+        if (s.preview) ymSignedIn().then((ok) => { if (!ok) return; let k = 0;
+          const up = () => { if (n !== startN.current || k++ >= 3) return; forgetStream(t);
+            streamUrl(t).then((f) => {
+              if (n !== startN.current) return;
+              if (!f || f.preview) { setTimeout(up, 1500 * k); return; }
+              let pos = 0; try { pos = player.currentTime || 0; } catch {}
+              const wasOn = playingRef.current || !userPaused.current;
+              player.replace({ uri: f.url }); if (pos > 0.5) { resumeAt.current = pos; } if (wasOn) player.play(); setPreview(false);
+            }).catch(() => setTimeout(up, 1500 * k)); };
+          setTimeout(up, 700); });
       }).catch(() => {});
       return;
     }
