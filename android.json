@@ -1,0 +1,13 @@
+{
+ "version": "0.2.10",
+ "build": 11,
+ "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/android/Pulse-Android-0.2.10.apk",
+ "size": 50962128,
+ "sha256": "4258c12207dc5ceda0cc72ac9c40e74edc3898c120c7737742c25281cb852068",
+ "notes": [
+  "Плеер в шторке и в панели управления — с обложкой и кнопками",
+  "При выключенном экране следующий трек включается сам",
+  "Пауза, когда отключили наушники"
+ ],
+ "date": "2026-11-03"
+}

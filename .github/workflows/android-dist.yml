@@ -1,0 +1,14 @@
+name: Android (выкладка)
+on: { push: { branches: [android-dist] } }
+permissions: { contents: write }
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          R="$GITHUB_REPOSITORY"
+          gh release view android -R "$R" >/dev/null 2>&1 || gh release create android -R "$R" --target main --title "Пульс для Android" --notes "Последняя версия «Пульса» для Android. Установите APK — дальше приложение обновляется само." --prerelease --latest=false
+          for a in $(gh release view android -R "$R" --json assets -q '.assets[].name'); do [ -f "$a" ] || gh release delete-asset android "$a" -R "$R" -y; done
+          gh release upload android Pulse-Android-*.apk android.json -R "$R" --clobber
