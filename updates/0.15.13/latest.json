@@ -1,0 +1,16 @@
+{
+  "version": "0.15.13",
+  "date": "2026-11-03",
+  "notes": [
+    "Новый раздел «Достижения»: 21 награда трёх уровней сложности (Профиль → Обзор).",
+    "Статуэтки — за самые сложные задачи, постеры в рамках — за задачи посложнее, билеты — за простые.",
+    "Объёмные статуэтки и постеры со звездой точно по форме логотипа; 3D загружается только при открытии раздела.",
+    "О новой награде сообщает островок сверху."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.13/pulse-app-0.15.13.zip",
+  "sha256": "f3e08c4d65cd448046af771d7927897dda3fda47ac904216b6038bf76faafce7",
+  "size": 799711,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
