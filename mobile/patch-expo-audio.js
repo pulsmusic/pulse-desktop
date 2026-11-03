@@ -156,3 +156,15 @@ edit('service/AudioMediaSessionCallback.kt', [
   ['            .add(SessionCommand(AudioControlsService.ACTION_SEEK_FORWARD, Bundle.EMPTY))\n', '            .add(SessionCommand(AudioControlsService.ACTION_SEEK_FORWARD, Bundle.EMPTY))\n            .add(SessionCommand(AudioControlsService.ACTION_NEXT, Bundle.EMPTY))\n            .add(SessionCommand(AudioControlsService.ACTION_PREV, Bundle.EMPTY))\n'],
   ['      AudioControlsService.ACTION_SEEK_FORWARD -> {', '      AudioControlsService.ACTION_NEXT -> AudioControlsService.getInstance()?.remote("next")\n      AudioControlsService.ACTION_PREV -> AudioControlsService.getInstance()?.remote("prev")\n      AudioControlsService.ACTION_SEEK_FORWARD -> {'],
 ]);
+
+// ВАЖНО: в Expo SDK 54 модули Android приходят уже собранными (готовый AAR из local-maven-repo), и правки
+// исходников выше в APK не попадали. Просим собрать expo-audio из исходников — тогда доработки действуют.
+{
+  const pj = path.join(process.argv[2] || '.', 'package.json');
+  const j = JSON.parse(fs.readFileSync(pj, 'utf8'));
+  j.expo = j.expo || {}; j.expo.autolinking = j.expo.autolinking || {}; j.expo.autolinking.android = j.expo.autolinking.android || {};
+  const b = new Set(j.expo.autolinking.android.buildFromSource || []); b.add('expo-audio');
+  j.expo.autolinking.android.buildFromSource = [...b];
+  fs.writeFileSync(pj, JSON.stringify(j, null, 2));
+  console.log('patch-expo-audio: expo-audio собирается из исходников');
+}

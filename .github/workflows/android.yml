@@ -75,7 +75,8 @@ jobs:
           sed -i '/^org.gradle.jvmargs/d' android/gradle.properties
           printf '\norg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8\nkotlin.daemon.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g\n' >> android/gradle.properties
           A=arm64-v8a,armeabi-v7a; case "$MSG" in *'[эмулятор]'*) A=$A,x86_64;; esac
-          cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=$A
+          cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=$A 2>&1 | tee ../../gradle.log; test ${PIPESTATUS[0]} -eq 0
+          if grep -a 'expo-audio' ../../gradle.log | grep -q '📦'; then echo 'expo-audio взят готовым (без доработок) — стоп'; exit 1; fi
           ls -la app/build/outputs/apk/release/
       - name: KVM для эмулятора
         if: contains(github.event.head_commit.message, '[эмулятор]')
