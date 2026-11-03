@@ -1,0 +1,15 @@
+{
+  "version": "0.15.14",
+  "date": "2026-11-03",
+  "notes": [
+    "Статуэтки и постеры в «Достижениях» показаны большими карточками с объёмной картинкой награды.",
+    "Ещё не открытая награда — карточка со знаком вопроса, названием задачи и прогрессом.",
+    "Неполученные билеты также скрыты знаком вопроса."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.14/pulse-app-0.15.14.zip",
+  "sha256": "b4e39fa648181626b56cf35062ab17482884c41bd423205fc5334988eb42f64c",
+  "size": 801679,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
