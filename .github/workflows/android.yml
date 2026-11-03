@@ -69,6 +69,8 @@ jobs:
           MSG: ${{ github.event.head_commit.message }}
         run: |
           cd app && npx expo prebuild -p android --no-install
+          # значок «Пульса» для уведомления плеера (его берёт доработанный expo-audio)
+          mkdir -p android/app/src/main/res/drawable && cp ../mobile/assets/notif/ic_pulse_notif.xml android/app/src/main/res/drawable/ && mkdir -p android/app/src/main/res/raw && cp ../mobile/assets/notif/keep.xml android/app/src/main/res/raw/pulse_keep.xml
           # больше памяти Gradle и Kotlin: иначе KSP (expo-updates) падает с «OutOfMemoryError: Metaspace» и сборка зависает
           sed -i '/^org.gradle.jvmargs/d' android/gradle.properties
           printf '\norg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8\nkotlin.daemon.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g\n' >> android/gradle.properties

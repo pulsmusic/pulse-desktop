@@ -21,6 +21,7 @@ edit('AudioPlayer.kt', [
   fun setActiveForLockScreen(`],
 ]);
 edit('service/AudioControlsService.kt', [
+  // кнопки «назад» / «вперёд» в сессии Media3 (Android 13+ рисует плеер по ним)
   ['    // Add play/pause button (always present)\n', `    customLayout.add(
       CommandButton.Builder(CommandButton.ICON_PREVIOUS)
         .setDisplayName("Previous")
@@ -40,22 +41,116 @@ edit('service/AudioControlsService.kt', [
     session.setCustomLayout(customLayout)
 `],
   ['    const val ACTION_SEEK_FORWARD = ', '    const val ACTION_NEXT = "expo.modules.audio.action.NEXT"\n    const val ACTION_PREV = "expo.modules.audio.action.PREV"\n    const val ACTION_SEEK_FORWARD = '],
-  ['  override fun onGetSession(', '  fun remote(cmd: String) { currentPlayer?.sendRemote(cmd) }\n\n  override fun onGetSession('],
-  // Кнопки в самом уведомлении (назад · пауза/пуск · вперёд). Android 13+ рисует плеер по данным сессии, а более
-  // старые Android и оболочки (Huawei EMUI / HarmonyOS, MIUI) — по кнопкам уведомления. В expo-audio их не было вовсе,
-  // поэтому там шторка показывала «ничего не играет» и без управления.
-  ['    builder.setStyle(MediaStyleNotificationHelper.MediaStyle(session))\n', `    val pi = { action: String, code: Int -> PendingIntent.getService(this, code, Intent(this, AudioControlsService::class.java).setAction(action), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE) }
-    builder.addAction(android.R.drawable.ic_media_previous, "Previous", pi(ACTION_PREV, 11))
-    builder.addAction(if (lastPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play, if (lastPlaying) "Pause" else "Play", pi(ACTION_TOGGLE, 12))
-    builder.addAction(android.R.drawable.ic_media_next, "Next", pi(ACTION_NEXT, 13))
-    builder.setOngoing(lastPlaying)
-    builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-    builder.setStyle(MediaStyleNotificationHelper.MediaStyle(session).setShowActionsInCompactView(0, 1, 2))
-`],
   ['      ACTION_TOGGLE -> withPlayerOnAppThread { player ->', '      ACTION_NEXT -> remote("next")\n      ACTION_PREV -> remote("prev")\n      ACTION_TOGGLE -> withPlayerOnAppThread { player ->'],
-  ['  private var playbackListener: Player.Listener? = null\n', '  private var playbackListener: Player.Listener? = null\n  @Volatile private var lastPlaying = false   // играет ли сейчас (для кнопки в уведомлении; читается из любого потока)\n'],
-  ['      updateSessionCustomLayout(player.ref.isPlaying)\n', '      lastPlaying = player.ref.isPlaying\n      updateSessionCustomLayout(player.ref.isPlaying)\n'],
-  ['        override fun onIsPlayingChanged(isPlaying: Boolean) {\n', '        override fun onIsPlayingChanged(isPlaying: Boolean) {\n          lastPlaying = isPlaying\n'],
+  ['import java.net.URL\n', 'import java.net.URL\nimport android.graphics.drawable.Icon\nimport android.media.MediaMetadata\nimport android.media.session.PlaybackState\nimport android.os.SystemClock\n'],
+  // Своя «классическая» системная сессия плеера (android.media.session). Её понимают все оболочки — Huawei EMUI /
+  // HarmonyOS, MIUI, старые Android: они берут из неё «что играет», позицию и кнопки. Сессия Media3 у этих оболочек
+  // показывалась как «Не воспроизводится» и без кнопок.
+  ['  private var playbackListener: Player.Listener? = null\n', `  private var playbackListener: Player.Listener? = null
+  @Volatile private var lastPlaying = false
+  @Volatile private var lastPos = 0L
+  @Volatile private var lastDur = 0L
+  private var fw: android.media.session.MediaSession? = null
+
+  fun remote(cmd: String) { currentPlayer?.sendRemote(cmd) }
+
+  @Synchronized private fun fwSession(): android.media.session.MediaSession {
+    fw?.let { return it }
+    val s = android.media.session.MediaSession(this, "PulsePlayer")
+    s.setCallback(object : android.media.session.MediaSession.Callback() {
+      override fun onPlay() { withPlayerOnAppThread { it.play() } }
+      override fun onPause() { withPlayerOnAppThread { it.pause() } }
+      override fun onStop() { withPlayerOnAppThread { it.pause() } }
+      override fun onSkipToNext() { remote("next") }
+      override fun onSkipToPrevious() { remote("prev") }
+      override fun onSeekTo(pos: Long) { withPlayerOnAppThread { it.seekTo(pos) } }
+    }, Handler(Looper.getMainLooper()))
+    buildContentIntent()?.let { s.setSessionActivity(it) }
+    s.isActive = true
+    fw = s
+    return s
+  }
+
+  // снимок состояния плеера (только из главного потока — там живёт плеер)
+  private fun snap() {
+    val p = currentPlayer?.ref ?: return
+    lastPlaying = p.isPlaying
+    lastPos = p.currentPosition.coerceAtLeast(0L)
+    lastDur = if (p.duration > 0) p.duration else 0L
+  }
+
+  private fun updateFw() {
+    val s = fwSession()
+    val md = MediaMetadata.Builder()
+      .putString(MediaMetadata.METADATA_KEY_TITLE, currentMetadata?.title ?: "")
+      .putString(MediaMetadata.METADATA_KEY_ARTIST, currentMetadata?.artist ?: "")
+      .putString(MediaMetadata.METADATA_KEY_ALBUM, currentMetadata?.albumTitle ?: "")
+      .putLong(MediaMetadata.METADATA_KEY_DURATION, lastDur)
+    currentArtwork?.let { md.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, it) }
+    s.setMetadata(md.build())
+    val actions = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE or
+      PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS or PlaybackState.ACTION_SEEK_TO or PlaybackState.ACTION_STOP
+    s.setPlaybackState(PlaybackState.Builder()
+      .setActions(actions)
+      .setState(if (lastPlaying) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED, lastPos, if (lastPlaying) 1f else 0f, SystemClock.elapsedRealtime())
+      .build())
+  }
+
+  private fun smallIcon(): Int {
+    val id = resources.getIdentifier("ic_pulse_notif", "drawable", packageName)
+    return if (id != 0) id else androidx.media3.session.R.drawable.media3_icon_circular_play
+  }
+`],
+  // уведомление — обычное системное, привязанное к нашей сессии, с тремя кнопками
+  [`    val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+      .setSmallIcon(androidx.media3.session.R.drawable.media3_icon_circular_play)
+      .setContentTitle(currentMetadata?.title ?: "\\u200E")
+      .setContentText(currentMetadata?.artist)
+      .setSubText(currentMetadata?.albumTitle)
+      .setLargeIcon(currentArtwork)
+      .setContentIntent(buildContentIntent())
+      .setAutoCancel(false)
+      .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
+
+    // Using only session custom layout: do NOT call setShowActionsInCompactView.
+    // The compact layout will follow the order of the custom layout provided to the session.
+    builder.setStyle(MediaStyleNotificationHelper.MediaStyle(session))
+
+    return builder.build()
+`, `    if (session.player == null) return null
+    updateFw()
+    val pi = { action: String, code: Int -> PendingIntent.getService(this, code, Intent(this, AudioControlsService::class.java).setAction(action), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE) }
+    val act = { icon: Int, title: String, action: String, code: Int -> Notification.Action.Builder(Icon.createWithResource(this, icon), title, pi(action, code)).build() }
+    val b = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(this, CHANNEL_ID) else Notification.Builder(this)
+    b.setSmallIcon(smallIcon())
+      .setContentTitle(currentMetadata?.title ?: "\\u200E")
+      .setContentText(currentMetadata?.artist)
+      .setSubText(currentMetadata?.albumTitle)
+      .setLargeIcon(currentArtwork)
+      .setContentIntent(buildContentIntent())
+      .setAutoCancel(false)
+      .setOngoing(lastPlaying)
+      .setShowWhen(false)
+      .setVisibility(Notification.VISIBILITY_PUBLIC)
+      .setCategory(Notification.CATEGORY_TRANSPORT)
+      .addAction(act(android.R.drawable.ic_media_previous, "Previous", ACTION_PREV, 11))
+      .addAction(if (lastPlaying) act(android.R.drawable.ic_media_pause, "Pause", ACTION_TOGGLE, 12) else act(android.R.drawable.ic_media_play, "Play", ACTION_TOGGLE, 12))
+      .addAction(act(android.R.drawable.ic_media_next, "Next", ACTION_NEXT, 13))
+      .setStyle(Notification.MediaStyle().setMediaSession(fwSession().sessionToken).setShowActionsInCompactView(0, 1, 2))
+    return b.build()
+`],
+  // состояние для системной сессии обновляем при каждом изменении игры и при перемотке
+  ['      updateSessionCustomLayout(player.ref.isPlaying)\n', '      snap()\n      updateSessionCustomLayout(player.ref.isPlaying)\n'],
+  ['        override fun onIsPlayingChanged(isPlaying: Boolean) {\n', '        override fun onIsPlayingChanged(isPlaying: Boolean) {\n          snap()\n'],
+  ['        override fun onPlaybackStateChanged(playbackState: Int) {\n', `        override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
+          snap()
+          postOrStartForegroundNotification(startInForeground = false)
+        }
+
+        override fun onPlaybackStateChanged(playbackState: Int) {
+          snap()
+`],
+  ['    mediaSession?.release()\n    mediaSession = null\n    stopForeground(STOP_FOREGROUND_REMOVE)\n', '    mediaSession?.release()\n    mediaSession = null\n    fw?.isActive = false\n    fw?.release()\n    fw = null\n    stopForeground(STOP_FOREGROUND_REMOVE)\n'],
 ]);
 edit('service/AudioMediaSessionCallback.kt', [
   ['            .add(SessionCommand(AudioControlsService.ACTION_SEEK_FORWARD, Bundle.EMPTY))\n', '            .add(SessionCommand(AudioControlsService.ACTION_SEEK_FORWARD, Bundle.EMPTY))\n            .add(SessionCommand(AudioControlsService.ACTION_NEXT, Bundle.EMPTY))\n            .add(SessionCommand(AudioControlsService.ACTION_PREV, Bundle.EMPTY))\n'],
