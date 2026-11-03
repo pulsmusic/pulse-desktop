@@ -1478,6 +1478,11 @@ function HeroLayer({ children, onBack }: any) {
       b.measure((_x2: number, _y2: number, _w2: number, _h2: number, _px2: number, py2: number) => cb(py - py2 + h / 2 + sy.value)); });
   }, 60), []);
   const ctx = useMemo(() => ({ sy, od, onDark, setOnDark, setFly, flyD, setBack, heroEnd, at }), [onDark]);
+  // «Прогрев»: анимации шапки, аватара и фона считаются на отдельном потоке, и в первый раз каждая из них
+  // выполняется медленно (на старых телефонах — заметный рывок в начале прокрутки, потом всё плавно).
+  // Когда страница открылась и успокоилась, незаметно сдвигаем прокрутку на 1 точку и обратно — всё
+  // просчитывается заранее, и первая настоящая прокрутка уже плавная.
+  useEffect(() => { const tm = setTimeout(() => { if (sy.value !== 0) return; sy.value = 1; setTimeout(() => { if (sy.value === 1) sy.value = 0; }, 60); }, 700); return () => clearTimeout(tm); }, []);
   return (
     <HeroCtx.Provider value={ctx}>
       <View ref={rootRef} collapsable={false} style={{ flex: 1 }}><Bg plain />{back && <HeroLayerBg b={back} sy={sy} />}<FadeTop animP={edgeP}>{children}</FadeTop><HeroTop onBack={onBack} />{fly && <ArtistFly f={fly} />}</View>

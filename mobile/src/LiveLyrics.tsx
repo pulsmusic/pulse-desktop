@@ -18,24 +18,28 @@ const OFF_KEY = 'pulse_lyr_off';
 
 // одно слово текущей строки: тусклое, поверх — то же слово белым, открывается слева направо по времени
 function Word({ text, a, b, time, size, ad }: { text: string; a: number; b: number; time: SharedValue<number>; size: number; ad?: boolean }) {
-  const w = useSharedValue(0);
+  const w = useSharedValue(0); const [ww, setWw] = useState(0);
   const st = useAnimatedStyle(() => {
     const d = Math.max(0.05, b - a); let p = (time.value - a) / d; p = p < 0 ? 0 : p > 1 ? 1 : p; p = p * p * (3 - 2 * p);
     return { width: w.value * p, opacity: p > 0.001 ? 1 : 0 };
   });
   const base = { fontFamily: SF, fontSize: size, lineHeight: size * 1.26, fontWeight: (ad ? '600' : '700') as any, letterSpacing: -0.3 };
   return (
-    <View onLayout={(e) => { w.value = e.nativeEvent.layout.width; }} style={{ marginRight: size * 0.26 }}>
+    <View onLayout={(e) => { const x = e.nativeEvent.layout.width; w.value = x; setWw(x); }} style={{ marginRight: size * 0.26 }}>
       <Text style={[base, { color: 'rgba(255,255,255,0.36)' }]}>{text}</Text>
-      <Animated.View style={[{ position: 'absolute', left: 0, top: 0, bottom: 0, overflow: 'hidden' }, st]}>
-        <Text numberOfLines={1} style={[base, { color: '#fff' }]}>{text}</Text>
-      </Animated.View>
+      {/* белая копия во всю ширину слова, а открывается обрезкой контейнера: Android больше не подставляет «…»
+          в узкую строку (раньше при заливке вместо слова мелькали точки) */}
+      {ww > 0 && <Animated.View style={[{ position: 'absolute', left: 0, top: 0, bottom: 0, overflow: 'hidden' }, st]}>
+        <Text style={[base, { color: '#fff', width: ww + 1 }]}>{text}</Text>
+      </Animated.View>}
     </View>
   );
 }
 
 // строка: основной текст и эдлибы (в скобках, без скобок — мельче, отдельно)
-function LineView({ l, next, cur, d, time, onPress, onLayout }: { l: Line; next?: Line; cur: boolean; d: number; time: SharedValue<number>; onPress: () => void; onLayout: (y: number, h: number) => void }) {
+const LineView = React.memo(LineViewImpl, (a: any, b: any) => a.l === b.l && a.next === b.next && a.cur === b.cur && a.d === b.d && a.i === b.i);
+function LineViewImpl({ l, next, cur, d, time, i, onTap, onPos }: { l: Line; next?: Line; cur: boolean; d: number; time: SharedValue<number>; i: number; onTap: (i: number) => void; onPos: (i: number, y: number, h: number) => void }) {
+  const onPress = () => onTap(i); const onLayout = (y: number, h: number) => onPos(i, y, h);
   const words = useMemo(() => String(l.text || '').split(/\s+/).filter(Boolean), [l.text]);
   const ad = useMemo(() => adFlags(words), [words]);
   const wt = useMemo(() => (cur ? wordTimes(l, next) : null), [cur, l, next]);
@@ -63,6 +67,8 @@ function LineView({ l, next, cur, d, time, onPress, onLayout }: { l: Line; next?
   );
 }
 
+// далёкие строки выглядят одинаково — сводим расстояние к нескольким ступеням (меньше перерисовок)
+const dBucket = (d: number) => (d <= -2 ? -2 : d >= 3 ? 3 : d);
 export function LiveLyrics({ t }: { t: { id: string; url?: string; title: string; artist: string; dur?: number } }) {
   const P: any = usePlayer();
   const [ly, setLy] = useState<Lyrics | null>(null); const [err, setErr] = useState(false);
@@ -103,6 +109,10 @@ export function LiveLyrics({ t }: { t: { id: string; url?: string; title: string
   const onDrag = () => { userAt.current = Date.now(); setBrowse(true); clearTimeout(brT.current); brT.current = setTimeout(() => { userAt.current = 0; setBrowse(false); setCur((c) => c); const p = ys.current[curRef.current]; if (p && boxH) sv.current?.scrollTo({ y: Math.max(0, p.y + p.h / 2 - boxH * 0.34), animated: true }); }, 3500); };
   useEffect(() => () => clearTimeout(brT.current), []);
 
+  // постоянные обработчики для строк — чтобы строки не перерисовывались зря
+  const linesRef = useRef(lines); linesRef.current = lines;
+  const tap = React.useCallback((i: number) => { const l = linesRef.current[i]; if (!l) return; userAt.current = 0; setBrowse(false); P.seek(Math.max(0, l.t + shiftRef.current)); }, []);
+  const pos = React.useCallback((i: number, y: number, h: number) => { ys.current[i] = { y, h }; }, []);
   if (!ly && !err) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#fff" /></View>;
   if (err || !ly || 'none' in ly) return (
     <View style={{ flex: 1, justifyContent: 'center' }}>
@@ -117,8 +127,7 @@ export function LiveLyrics({ t }: { t: { id: string; url?: string; title: string
         scrollEventThrottle={32} onScroll={(_e: NativeSyntheticEvent<NativeScrollEvent>) => {}}>
         {!synced && <Text style={{ fontFamily: SF, fontSize: 13, color: 'rgba(255,255,255,0.55)', marginBottom: 14 }}>Живого текста у трека нет — показываю обычный</Text>}
         {lines.map((l, i) => synced
-          ? <LineView key={i} l={l} next={lines[i + 1]} cur={i === cur && !browse} d={browse ? (i < cur ? -1 : i === cur ? 0 : 1) : cur < 0 ? i + 1 : i - cur} time={time}
-              onPress={() => { userAt.current = 0; setBrowse(false); P.seek(Math.max(0, l.t + shiftRef.current)); }} onLayout={(y, h) => { ys.current[i] = { y, h }; }} />
+          ? <LineView key={i} i={i} l={l} next={lines[i + 1]} cur={i === cur && !browse} d={dBucket(browse ? (i < cur ? -1 : i === cur ? 0 : 1) : cur < 0 ? i + 1 : i - cur)} time={time} onTap={tap} onPos={pos} />
           : <Text key={i} style={{ fontFamily: SF, fontSize: 22, lineHeight: 30, fontWeight: '600', color: 'rgba(255,255,255,0.88)', marginBottom: l.text ? 8 : 14 }}>{l.text}</Text>)}
         <Text style={{ fontFamily: SF, fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 10 }}>{(ly.writers ? 'Авторы: ' + ly.writers + ' · ' : '') + 'Текст: ' + ly.source + (synced ? (ly.ai ? ' · время по словам (ИИ)' : ly.words ? ' · время по словам' : ' · подсветка по слогам') : '')}</Text>
       </ScrollView>
