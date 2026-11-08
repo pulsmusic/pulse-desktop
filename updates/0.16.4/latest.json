@@ -1,0 +1,13 @@
+{
+  "version": "0.16.4",
+  "date": "2026-11-08",
+  "notes": [
+    "Светлая тема: панели стали карточками с мягкой тенью и больше не сливаются с фоном.\nДлинные имена исполнителей, альбомов и плейлистов больше не обрезаются сверху и снизу."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.16.4/pulse-app-0.16.4.zip",
+  "sha256": "be568034e8663779de9881b4667695313814a23b1b43b8b1507f1657b969e054",
+  "size": 721256,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
