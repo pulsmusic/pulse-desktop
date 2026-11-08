@@ -1,0 +1,13 @@
+{
+  "version": "0.15.22",
+  "date": "2026-11-08",
+  "notes": [
+    "Обложки альбомов и плейлистов снова прежнего, крупного размера."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.22/pulse-app-0.15.22.zip",
+  "sha256": "123457ac206764a4716c0a3da7fe91a2ab6df0d957b2974a846d7ac80edb17db",
+  "size": 887964,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
