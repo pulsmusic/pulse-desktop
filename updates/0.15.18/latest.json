@@ -1,0 +1,15 @@
+{
+  "version": "0.15.18",
+  "date": "2026-11-08",
+  "notes": [
+    "«Моя музыка» больше не тормозит: обложки своих альбомов показываются лёгкими уменьшенными копиями, полная — только в большом плеере.",
+    "Альбомы и артисты подгружаются частями по мере прокрутки.",
+    "Разбор папок больше не перерисовывает всю страницу."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.18/pulse-app-0.15.18.zip",
+  "sha256": "5d6c176d3a73dfa49b87cc2a9301acdf73b4f5452b272eed1ea14e4a74bf4539",
+  "size": 886327,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
