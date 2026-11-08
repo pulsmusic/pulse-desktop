@@ -1,0 +1,15 @@
+{
+  "version": "0.15.24",
+  "date": "2026-11-08",
+  "notes": [
+    "В плеере внизу — капсула с качеством играющего трека: режим, разрядность и частота.",
+    "Капсулу можно выключить: Профиль → «Звук» → «Показывать качество в плеере».",
+    "Кнопки плеера больше не перекрываются и не сдвигаются при смене трека."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.24/pulse-app-0.15.24.zip",
+  "sha256": "3570106751ed3e7b407a2ffafc62cbf25e9889958b95181bafabcdd009772f20",
+  "size": 900408,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
