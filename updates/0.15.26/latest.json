@@ -1,0 +1,15 @@
+{
+  "version": "0.15.26",
+  "date": "2026-11-08",
+  "notes": [
+    "Живой текст стал проще и легче: подсвечивается строка, которая сейчас поётся, остальные — в мягком размытии.",
+    "Убрана ИИ-разметка текста — программа меньше нагружает процессор и не скачивает модель.",
+    "Новый значок разработчика рядом с галочкой в профиле."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.26/pulse-app-0.15.26.zip",
+  "sha256": "807123ac21941082209f2a6f6637449262876b34e313530f55a8c2416a64b97f",
+  "size": 699841,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
