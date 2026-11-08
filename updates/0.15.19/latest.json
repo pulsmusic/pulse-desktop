@@ -1,0 +1,15 @@
+{
+  "version": "0.15.19",
+  "date": "2026-11-08",
+  "notes": [
+    "Свой альбом можно убрать из «Пульса» кнопкой-мусоркой на обложке — файлы на диске остаются.",
+    "Обложка выбирается точнее: задник, вкладыш и диск больше не показываются вместо лицевой.",
+    "Ползунок громкости теперь всегда в цвете оформления."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.19/pulse-app-0.15.19.zip",
+  "sha256": "4644b1db8c2aa8d199b647146ebc833e1e2d75aa0ab2a71ac9a95c250dbd6b9b",
+  "size": 887201,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
