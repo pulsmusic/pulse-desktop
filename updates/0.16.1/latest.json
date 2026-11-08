@@ -1,0 +1,14 @@
+{
+  "version": "0.16.1",
+  "date": "2026-11-08",
+  "notes": [
+    "Исправлен вход в аккаунт «Пульса», если токен Яндекса вставлен целым адресом.",
+    "Если вход не получается, теперь видно, почему."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.16.1/pulse-app-0.16.1.zip",
+  "sha256": "3612d3563684fe84dedc8329e1480ce1b0023fb94e7ac8c2bd1e17fb8db7eeea",
+  "size": 721016,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
