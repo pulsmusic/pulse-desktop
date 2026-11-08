@@ -1,0 +1,15 @@
+{
+  "version": "0.15.16",
+  "date": "2026-11-08",
+  "notes": [
+    "Обложки берутся из самих файлов во всех форматах: FLAC, MP3, M4A, OGG и Opus; из нескольких картинок выбирается лицевая.",
+    "Если в файле обложки нет — она ищется в папке, в подпапках Scans/Covers/Artwork и в папке выше для CD1/CD2.",
+    "M4A, OGG и Opus показывают названия, артиста, альбом и длительность из тегов."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.16/pulse-app-0.15.16.zip",
+  "sha256": "2cb56e6bb976c1d38711a507f3341ef1192db2375a81c079cb038bf3f1920de0",
+  "size": 883974,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
