@@ -1,0 +1,51 @@
+#!/bin/bash
+# Сборка «Пульса» для Mac (запускается на Mac — в GitHub Actions, на macos-14).
+#   mac/build.sh <версия> <arm64|x64> <pulse-app-версия.zip> <куда положить .zip>
+# Берёт официальный Electron для macOS (сверка SHA-256), кладёт в него файлы «Пульса», переименовывает в Pulse.app,
+# подписывает (ad-hoc: подписи Apple Developer у проекта нет) и проверяет подпись. Внутри — загрузчик boot.js:
+# он запускает обновления, скачанные программой в ~/Library/Application Support/Pulse/ota/.
+set -euo pipefail
+VER="$1"; ARCH="$2"; APPZIP="$(cd "$(dirname "$3")" && pwd)/$(basename "$3")"; OUT="$4"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+EV=33.2.1
+case "$ARCH" in
+  arm64) SHA=15615ce68c1a31b0db186af8607c00a30e3f64e63642aab735b4997d0fab7631 ;;
+  x64)   SHA=d4ba6779efea1034b98d6ad3aef5388c16a4fe2f8938cbeb6a6547ebfe4c7bda ;;
+  *) echo "неизвестная архитектура $ARCH"; exit 1 ;;
+esac
+W="$(mktemp -d)"
+curl -fsSL --retry 3 -o "$W/e.zip" "https://github.com/electron/electron/releases/download/v$EV/electron-v$EV-darwin-$ARCH.zip"
+echo "$SHA  $W/e.zip" | shasum -a 256 -c -
+ditto -x -k "$W/e.zip" "$W/e"
+mv "$W/e/Electron.app" "$W/Pulse.app"
+R="$W/Pulse.app/Contents/Resources"
+rm -f "$R/default_app.asar"
+mkdir "$R/app"
+ditto -x -k "$APPZIP" "$R/app"
+test -f "$R/app/boot.js" && test -f "$R/app/main.js" && test -f "$R/app/dist/index.html"
+cp "$HERE/pulse.icns" "$R/electron.icns"
+python3 - "$W/Pulse.app" "$VER" <<'PY'
+import json, plistlib, sys, os
+app, ver = sys.argv[1], sys.argv[2]
+pj = os.path.join(app, "Contents/Resources/app/package.json")
+p = json.load(open(pj, encoding="utf-8"))
+assert p["version"] == ver, "версия пакета не совпадает"
+p["main"] = "boot.js"
+json.dump(p, open(pj, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+ip = os.path.join(app, "Contents/Info.plist")
+d = plistlib.load(open(ip, "rb"))
+d.update({"CFBundleName": "Pulse", "CFBundleDisplayName": "Pulse", "CFBundleIdentifier": "ru.pulse.desktop",
+          "CFBundleShortVersionString": ver, "CFBundleVersion": ver, "LSApplicationCategoryType": "public.app-category.music",
+          "NSHumanReadableCopyright": "© 2026 Пульс"})
+for k in ("ElectronAsarIntegrity", "NSCameraUsageDescription", "NSMicrophoneUsageDescription", "NSBluetoothAlwaysUsageDescription", "NSBluetoothPeripheralUsageDescription"):
+    d.pop(k, None)
+plistlib.dump(d, open(ip, "wb"))
+PY
+codesign --force --deep --sign - "$W/Pulse.app"
+codesign --verify --deep --strict --verbose=2 "$W/Pulse.app"
+rm -f "$OUT"
+ditto -c -k --sequesterRsrc --keepParent "$W/Pulse.app" "$OUT"
+# для самопроверки на этом же Mac
+rm -rf "$W/e" "$W/e.zip"
+echo "$W/Pulse.app" > "$OUT.path"
+ls -la "$OUT"
