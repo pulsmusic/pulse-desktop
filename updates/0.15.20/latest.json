@@ -1,0 +1,16 @@
+{
+  "version": "0.15.20",
+  "date": "2026-11-08",
+  "notes": [
+    "Новая геометрия интерфейса: единые отступы, скругления и размеры карточек.",
+    "У артиста — ♥, широкая кнопка «Слушать» и «Перемешать»; кнопки стали жирнее.",
+    "Левая колонка прокручивается: любимые треки, недавние, плейлисты и избранные исполнители — недавно слушанные выше.",
+    "Ползунок громкости двигается плавно и светится мягче."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.20/pulse-app-0.15.20.zip",
+  "sha256": "f1e7bcdae57e47681a72782b8b305fca23db4a8d852d9566d1755515ac046d83",
+  "size": 887898,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
