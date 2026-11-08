@@ -1,0 +1,13 @@
+{
+  "version": "0.15.27",
+  "date": "2026-11-08",
+  "notes": [
+    "Значок разработчика стоит ровно, на одной линии с галочкой."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.27/pulse-app-0.15.27.zip",
+  "sha256": "2b702feb3d466eff6187ff2b84bf9a53438b77576263662e57525eada4b7e674",
+  "size": 699877,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
