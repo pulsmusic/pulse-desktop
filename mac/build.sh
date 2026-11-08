@@ -1,5 +1,5 @@
 #!/bin/bash
-# Сборка «Пульса» для Mac (запускается на Mac — в GitHub Actions, на macos-14).
+# Сборка «Пульса» для Mac (запускается на Mac — в GitHub Actions, на macos-latest).
 #   mac/build.sh <версия> <arm64|x64> <pulse-app-версия.zip> <куда положить .zip>
 # Берёт официальный Electron для macOS (сверка SHA-256), кладёт в него файлы «Пульса», переименовывает в Pulse.app,
 # подписывает (ad-hoc: подписи Apple Developer у проекта нет) и проверяет подпись. Внутри — загрузчик boot.js:

@@ -4,7 +4,7 @@
 # К релизу прикрепляются latest.json и пакет (их скачивает кнопка «Проверить обновления») и установщик.
 # Установщик собирается здесь же из installer/ (Go) — с Electron с GitHub (проверка SHA-256) и файлами этой версии,
 # поэтому в нём всегда последняя версия программы. Не собрался — берётся из прошлого релиза.
-# Сборки для Mac (Apple M и Intel) собираются на Mac (macos-14) из mac/: подпись проверяется, программа для Apple M
+# Сборки для Mac (Apple M и Intel) собираются на Mac (macos-latest) из mac/: подпись проверяется, программа для Apple M
 # запускается в режиме самопроверки. К релизу прикрепляются Pulse-Mac-Apple-M.zip, Pulse-Mac-Intel.zip и mac.json
 # (адреса и SHA-256 — по нему программа на Mac обновляет себя целиком, когда меняется движок).
 name: Выпуск обновления
@@ -52,7 +52,7 @@ jobs:
   mac:
     needs: ver
     if: needs.ver.outputs.ver != ''
-    runs-on: macos-14
+    runs-on: macos-latest
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
