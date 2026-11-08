@@ -1,0 +1,15 @@
+{
+  "version": "0.15.17",
+  "date": "2026-11-08",
+  "notes": [
+    "Исправлено: звук своих треков с компьютера иногда пропадал на пару секунд и возвращался.",
+    "Файлы читаются по частям ровно тогда, когда плееру нужны данные; папки больше не пересматриваются от простого чтения файла.",
+    "Если данные задержались дольше 3 секунд, плеер сам продолжает с того же места."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.17/pulse-app-0.15.17.zip",
+  "sha256": "fa6b944763f60ea9adf795b29e7f557e6dffc194a0a7b5925bec5a9b8f80c4d8",
+  "size": 884736,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
