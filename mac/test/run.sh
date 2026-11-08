@@ -45,7 +45,7 @@ const { chromium } = require('playwright-core');
   setTimeout(() => process.exit(0), 1000);
 })();
 JS
-APP="$W/Apps/Pulse.app"; EXE="$APP/Contents/MacOS/Electron"; LOG="$HOME/Library/Application Support/Pulse/logs/pulse.log"
+APP="$W/Apps/Pulse.app"; EXE="$APP/Contents/MacOS/Pulse"; LOG="$HOME/Library/Application Support/Pulse/logs/pulse.log"
 start() { PULSE_UPDATE_FEED=http://localhost:8898/latest.json "$EXE" --remote-debugging-port=9450 >> "$W/run.log" 2>&1 & }
 cd "$W"
 echo "== 1. обычное обновление $V0 → $V1"

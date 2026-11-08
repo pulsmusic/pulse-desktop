@@ -37,6 +37,18 @@ d = plistlib.load(open(ip, "rb"))
 d.update({"CFBundleName": "Pulse", "CFBundleDisplayName": "Pulse", "CFBundleIdentifier": "ru.pulse.desktop",
           "CFBundleShortVersionString": ver, "CFBundleVersion": ver, "LSApplicationCategoryType": "public.app-category.music",
           "NSHumanReadableCopyright": "© 2026 Пульс"})
+d["CFBundleExecutable"] = "Pulse"
+os.rename(os.path.join(app, "Contents/MacOS/Electron"), os.path.join(app, "Contents/MacOS/Pulse"))
+# помощники Electron → «Pulse Helper…» (как у electron-packager): Electron ищет их по имени программы
+fw = os.path.join(app, "Contents/Frameworks")
+for suf, bid in (("", "helper"), (" (GPU)", "helper.GPU"), (" (Plugin)", "helper.Plugin"), (" (Renderer)", "helper.Renderer")):
+    old, new = os.path.join(fw, f"Electron Helper{suf}.app"), os.path.join(fw, f"Pulse Helper{suf}.app")
+    os.rename(old, new)
+    os.rename(os.path.join(new, f"Contents/MacOS/Electron Helper{suf}"), os.path.join(new, f"Contents/MacOS/Pulse Helper{suf}"))
+    hp = os.path.join(new, "Contents/Info.plist"); h = plistlib.load(open(hp, "rb"))
+    h.update({"CFBundleExecutable": f"Pulse Helper{suf}", "CFBundleName": f"Pulse Helper{suf}", "CFBundleIdentifier": f"ru.pulse.desktop.{bid}"})
+    h.pop("CFBundleDisplayName", None)
+    plistlib.dump(h, open(hp, "wb"))
 for k in ("ElectronAsarIntegrity", "NSCameraUsageDescription", "NSMicrophoneUsageDescription", "NSBluetoothAlwaysUsageDescription", "NSBluetoothPeripheralUsageDescription"):
     d.pop(k, None)
 plistlib.dump(d, open(ip, "wb"))
