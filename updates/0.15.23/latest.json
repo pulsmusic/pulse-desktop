@@ -1,0 +1,16 @@
+{
+  "version": "0.15.23",
+  "date": "2026-11-08",
+  "notes": [
+    "Новый раздел «Звук» в профиле: качество звука — низкое, среднее или без потерь (FLAC до 24 бит / 48 кГц с Яндекс Плюсом).",
+    "Эквалайзер на 10 полос с готовыми настройками и защитой от перегрузки.",
+    "«Профессиональный вывод»: путь звука и выбор устройства вывода.",
+    "Проверка обновлений больше не обрывается при временных сбоях GitHub."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.23/pulse-app-0.15.23.zip",
+  "sha256": "ce7f510479d82f4d303bd32dcfc9e71c75a1d54c8183b929736990c8b94d1413",
+  "size": 898564,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
