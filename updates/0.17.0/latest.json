@@ -1,0 +1,16 @@
+{
+  "version": "0.17.0",
+  "date": "2026-11-08",
+  "notes": [
+    "«Пульс» для Mac теперь обновляется по воздуху — без переустановки, как на Windows.",
+    "Если обновлению нужен новый движок программы, Mac-версия скачивает и устанавливает его автоматически.",
+    "Сборки для Mac (Apple M и Intel) выходят вместе с каждым обновлением.",
+    "На Mac добавлено системное меню: работают ⌘Q, копирование и вставка."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.17.0/pulse-app-0.17.0.zip",
+  "sha256": "bb2684cc1be5cbdb84fa841d329284a8a48340ec962f80bf6e812907724d9600",
+  "size": 726555,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
