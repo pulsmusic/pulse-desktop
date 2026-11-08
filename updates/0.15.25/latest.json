@@ -1,0 +1,14 @@
+{
+  "version": "0.15.25",
+  "date": "2026-11-08",
+  "notes": [
+    "Обложку трека или альбома можно открыть крупно: нажмите на неё в большом плеере или на странице альбома — и поверните мышкой.",
+    "В профиле — анонс подписки «Импульс»: что в неё войдёт и сколько будет стоить. Продажи откроются позже."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.25/pulse-app-0.15.25.zip",
+  "sha256": "a93e358157b12e5134809ec23cb7e2389400de5a9d4c25fa58e49372832b8ca4",
+  "size": 932316,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
