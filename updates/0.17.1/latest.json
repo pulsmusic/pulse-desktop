@@ -1,0 +1,15 @@
+{
+  "version": "0.17.1",
+  "date": "2026-11-08",
+  "notes": [
+    "Подписи «Пульс для Windows» заменены на «Пульс · Альфа» — программа одна для Windows и Mac.",
+    "На Mac подсказки и сочетания клавиш показываются для Mac: ⌘ вместо Ctrl, macOS вместо Windows во вкладке «Звук».",
+    "На Mac добавлен полноэкранный режим через меню «Вид» и сочетание ⌃⌘F."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.17.1/pulse-app-0.17.1.zip",
+  "sha256": "374370d1e0d381d260819ba8835a746c90b5a44c98009a51a413300df9224d5c",
+  "size": 726757,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
