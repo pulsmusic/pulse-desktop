@@ -1,0 +1,13 @@
+{
+  "version": "0.16.2",
+  "date": "2026-11-08",
+  "notes": [
+    "Страница «Друзья» больше не прокручивается целиком — листаются только список друзей и чат."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.16.2/pulse-app-0.16.2.zip",
+  "sha256": "d0a854e8bc95b06384f2d151419df1b1d35c9f8d4b8a467e288aa65ac044da7c",
+  "size": 721071,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
