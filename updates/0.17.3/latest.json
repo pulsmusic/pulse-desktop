@@ -1,0 +1,13 @@
+{
+  "version": "0.17.3",
+  "date": "2026-11-08",
+  "notes": [
+    "Шрифты в разделе «Друзья» приведены к единому стилю программы: те же размеры и начертания заголовков и текста."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.17.3/pulse-app-0.17.3.zip",
+  "sha256": "2bffdc561e405f1d4b690836124fdfa163f070082274b0b159635f61bbfc0878",
+  "size": 727081,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
