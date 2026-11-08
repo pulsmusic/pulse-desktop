@@ -1,0 +1,14 @@
+{
+  "version": "0.15.21",
+  "date": "2026-11-08",
+  "notes": [
+    "«Любимые треки» и «Недавние» открываются отдельной страницей, как альбом: обложка, «Слушать», «Перемешать» и список треков.",
+    "Значки пустых плейлистов в левой колонке — правильного размера."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.21/pulse-app-0.15.21.zip",
+  "sha256": "24389f0100d33e4cdadfef34a75c0dc43f8c8b20986c27df32e7da4a96b29b7d",
+  "size": 887946,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
