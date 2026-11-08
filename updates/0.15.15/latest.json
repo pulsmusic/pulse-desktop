@@ -1,0 +1,15 @@
+{
+  "version": "0.15.15",
+  "date": "2026-11-08",
+  "notes": [
+    "Новый раздел «Моя музыка → На компьютере»: свои файлы FLAC, MP3, M4A, OGG, WAV и альбомы с CUE.",
+    "Папку можно выбрать или перетащить в окно — музыка остаётся на месте, новые файлы появляются сами.",
+    "Альбомы одним файлом с CUE делятся на треки и играют подряд без пауз; обложки и теги берутся из файлов и папки."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.15.15/pulse-app-0.15.15.zip",
+  "sha256": "aafd750f1ae8b4e673102c571a95b0c45b9daae7fed835540cf229ca87f40f3a",
+  "size": 880967,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
