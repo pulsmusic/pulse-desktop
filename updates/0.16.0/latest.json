@@ -1,0 +1,15 @@
+{
+  "version": "0.16.0",
+  "date": "2026-11-08",
+  "notes": [
+    "Друзья в «Пульсе»: аккаунт со своим @ником, поиск друзей и запросы в друзья.",
+    "Чаты со сквозным шифрованием — текст, треки, альбомы и плейлисты; «Отправить другу» в меню трека.",
+    "«Искра» — совместное прослушивание до 6 человек, синхронно до долей секунды; управлять может любой."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.16.0/pulse-app-0.16.0.zip",
+  "sha256": "c15ac1cd344256654d37608acc19ca890334596adead547f732c4c8c0a04f1dd",
+  "size": 720964,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
