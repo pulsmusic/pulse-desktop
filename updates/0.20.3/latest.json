@@ -1,0 +1,13 @@
+{
+  "version": "0.20.3",
+  "date": "2026-11-09",
+  "notes": [
+    "Профиль и раздел «Друзья» показывают дополнительный ник официального аккаунта."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.3/pulse-app-0.20.3.zip",
+  "sha256": "8e588cf83205bb177bb752b376015623126a104ee8965883c8207f85f9d67f53",
+  "size": 735538,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
