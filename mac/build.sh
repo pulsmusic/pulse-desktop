@@ -14,7 +14,7 @@ case "$ARCH" in
   *) echo "неизвестная архитектура $ARCH"; exit 1 ;;
 esac
 W="$(mktemp -d)"
-curl -fsSL --retry 3 -o "$W/e.zip" "https://github.com/electron/electron/releases/download/v$EV/electron-v$EV-darwin-$ARCH.zip"
+curl -fsSL --retry 6 --retry-all-errors --retry-delay 5 -o "$W/e.zip" "https://github.com/electron/electron/releases/download/v$EV/electron-v$EV-darwin-$ARCH.zip"
 echo "$SHA  $W/e.zip" | shasum -a 256 -c -
 ditto -x -k "$W/e.zip" "$W/e"
 mv "$W/e/Electron.app" "$W/Pulse.app"
