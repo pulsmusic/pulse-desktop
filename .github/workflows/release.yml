@@ -4,7 +4,8 @@
 # К релизу прикрепляются latest.json и пакет (их скачивает кнопка «Проверить обновления») и установщик.
 # Установщик собирается здесь же из installer/ (Go) — с Electron с GitHub (проверка SHA-256) и файлами этой версии,
 # поэтому в нём всегда последняя версия программы. Не собрался — берётся из прошлого релиза.
-# Сборки для Mac (Apple M и Intel) собираются на Mac (macos-latest) из mac/: подпись проверяется, программа для Apple M
+# Релиз для Windows выходит сразу, не дожидаясь Mac. Сборки для Mac (Apple M и Intel) собираются на Mac (macos-latest) из mac/
+# уже после релиза и прикрепляются к нему сами (компьютеров с Mac у GitHub бывает мало — раньше из-за очереди ждали все): подпись проверяется, программа для Apple M
 # запускается в режиме самопроверки. К релизу прикрепляются Pulse-Mac-Apple-M.zip, Pulse-Mac-Intel.zip и mac.json
 # (адреса и SHA-256 — по нему программа на Mac обновляет себя целиком, когда меняется движок).
 name: Выпуск обновления
@@ -15,7 +16,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
-concurrency: release
 jobs:
   ver:
     runs-on: ubuntu-latest
@@ -54,10 +54,12 @@ jobs:
           PY
 
   mac:
-    needs: ver
+    needs: [ver, release]
     if: needs.ver.outputs.ver != ''
     runs-on: macos-latest
     continue-on-error: true
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - name: Сборки для Mac
@@ -83,30 +85,21 @@ jobs:
           json.dump(m, open("out/mac.json", "w"), indent=2)
           print(json.dumps(m, indent=2))
           PY
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mac
-          path: |
-            out/Pulse-Mac-Apple-M.zip
-            out/Pulse-Mac-Intel.zip
-            out/mac.json
-          if-no-files-found: ignore
-          retention-days: 3
+      - name: Прикрепить к релизу
+        run: |
+          VER="${{ needs.ver.outputs.ver }}"
+          if [ -f out/mac.json ]; then gh release upload "v$VER" out/Pulse-Mac-Apple-M.zip out/Pulse-Mac-Intel.zip out/mac.json -R "$GITHUB_REPOSITORY" --clobber; fi
 
   release:
-    needs: [ver, mac]
-    if: always() && needs.ver.outputs.ver != '' && needs.ver.result == 'success'
+    needs: ver
+    if: needs.ver.outputs.ver != ''
     runs-on: ubuntu-latest
+    concurrency: release
     steps:
       - uses: actions/checkout@v4
       - name: Номер версии
         id: ver
         run: echo "ver=${{ needs.ver.outputs.ver }}" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: mac
-          path: macout
       - uses: actions/setup-go@v5
         if: steps.ver.outputs.ver != ''
         with:

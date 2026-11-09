@@ -8,7 +8,7 @@ on:
     paths: ['mac/build.sh', '.github/workflows/mac-backfill.yml']
 permissions:
   contents: write
-concurrency: release
+concurrency: mac-backfill
 jobs:
   mac:
     runs-on: macos-latest
