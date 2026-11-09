@@ -1,0 +1,13 @@
+{
+  "version": "0.18.4",
+  "date": "2026-11-09",
+  "notes": [
+    "Исправлена ошибка, из-за которой включённые «Перемешать» и «Повтор» в плеере не выделялись цветом профиля."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.18.4/pulse-app-0.18.4.zip",
+  "sha256": "3ce9c8ef276caab0645ce1b460c1befb1d72a8186341938216fff5f9b189c56e",
+  "size": 728840,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
