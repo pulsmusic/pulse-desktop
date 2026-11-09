@@ -1,0 +1,13 @@
+{
+  "version": "0.20.13",
+  "date": "2026-11-09",
+  "notes": [
+    "Звук из Яндекс Музыки скачивает сетевой модуль Chromium: главный процесс программы при загрузке трека нагружает процессор примерно в три раза меньше"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.13/pulse-app-0.20.13.zip",
+  "sha256": "a0d6b22611f1b86744024d4f8eafdb67bb1657536e0cc4b466477eece60195a5",
+  "size": 830300,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
