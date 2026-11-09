@@ -1,0 +1,14 @@
+{
+  "version": "0.19.0",
+  "date": "2026-11-09",
+  "notes": [
+    "Новый стартовый экран «Моего пульса»: стопка разноцветных стеклянных карточек, цвет которых меняется вместе с выбранным настроением.",
+    "Настройки «Моего пульса» оформлены стеклянными переключателями; выбранные параметры показываются на верхней карточке стопки."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.19.0/pulse-app-0.19.0.zip",
+  "sha256": "db153d91736314c93d822e4198bd0bd57ba6c9921146238afc5a157bfc9e0b2f",
+  "size": 729933,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
