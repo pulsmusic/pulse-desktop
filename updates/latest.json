@@ -1,0 +1,13 @@
+{
+  "version": "0.20.1",
+  "date": "2026-11-09",
+  "notes": [
+    "Ускорены поиск и загрузка обновлений: программа обращается сразу к нескольким серверам и использует тот, что отвечает быстрее."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.1/pulse-app-0.20.1.zip",
+  "sha256": "f98d303616489116599ff7d0e99354a01f63eb9ab3e37c3ef8c7c99cac7044aa",
+  "size": 735186,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
