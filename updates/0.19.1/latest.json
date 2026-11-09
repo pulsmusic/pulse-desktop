@@ -1,0 +1,13 @@
+{
+  "version": "0.19.1",
+  "date": "2026-11-09",
+  "notes": [
+    "Повышена надёжность загрузки обновлений: при кратковременных сбоях сервера загрузка повторяется автоматически."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.19.1/pulse-app-0.19.1.zip",
+  "sha256": "0e5d27698447459ed84483c49fdb416a21fb9db8ed30abab6b1889cc95756275",
+  "size": 730395,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
