@@ -1,12 +1,13 @@
 {
-  "version": "0.20.1",
+  "version": "0.20.2",
   "date": "2026-11-09",
   "notes": [
-    "Ускорены поиск и загрузка обновлений: программа обращается сразу к нескольким серверам и использует тот, что отвечает быстрее."
+    "Обновлён вид ника в профиле: стеклянная капсула с кнопкой копирования.",
+    "Карточка подписки «Импульс» перенесена во вкладку «Обзор» профиля."
   ],
-  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.1/pulse-app-0.20.1.zip",
-  "sha256": "f98d303616489116599ff7d0e99354a01f63eb9ab3e37c3ef8c7c99cac7044aa",
-  "size": 735186,
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.2/pulse-app-0.20.2.zip",
+  "sha256": "2dfb55ebc7aab27b2fc9aa0595049c8832a983c3bce8cba3877fb7fe32f435a6",
+  "size": 735468,
   "minElectron": "33.2.1",
   "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
   "online": "https://pulse-online.pulsmusic.workers.dev"

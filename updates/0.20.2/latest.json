@@ -1,0 +1,14 @@
+{
+  "version": "0.20.2",
+  "date": "2026-11-09",
+  "notes": [
+    "Обновлён вид ника в профиле: стеклянная капсула с кнопкой копирования.",
+    "Карточка подписки «Импульс» перенесена во вкладку «Обзор» профиля."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.2/pulse-app-0.20.2.zip",
+  "sha256": "2dfb55ebc7aab27b2fc9aa0595049c8832a983c3bce8cba3877fb7fe32f435a6",
+  "size": 735468,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
