@@ -1,0 +1,13 @@
+{
+  "version": "0.18.2",
+  "date": "2026-11-09",
+  "notes": [
+    "Иконка «Друзья» в меню получила анимацию при выборе раздела — в одном стиле с остальными пунктами."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.18.2/pulse-app-0.18.2.zip",
+  "sha256": "d5bde22665c08ed914e4e9808cbc5c91657d2352bd93cce9e3a4102c42b60a09",
+  "size": 728605,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
