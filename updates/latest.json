@@ -1,13 +1,13 @@
 {
-  "version": "0.20.5",
+  "version": "0.20.6",
   "date": "2026-11-09",
   "notes": [
-    "Повышена надёжность входа в аккаунт «Пульса»: при запуске аккаунт открывается сразу, а при сбоях связи программа переподключается сама.",
-    "При входе по токену Яндекс Музыки кратковременные сбои серверов Яндекса больше не мешают входу."
+    "Новые обложки «Любимых треков», «Недавних», «На компьютере» и пустых плейлистов: матовое стекло в цвете профиля с объёмным значком",
+    "Значки на обложках одного размера и без анимации"
   ],
-  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.5/pulse-app-0.20.5.zip",
-  "sha256": "97dbbd1e62f3b065798402bcd33c7e2890e76f43e569c3c5716743f56f35b76c",
-  "size": 736625,
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.6/pulse-app-0.20.6.zip",
+  "sha256": "3d54f8e6bc0ee5ac9f247881e2b1d57d89ea442d195b597c0698f9907d70a922",
+  "size": 736842,
   "minElectron": "33.2.1",
   "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
   "online": "https://pulse-online.pulsmusic.workers.dev"
