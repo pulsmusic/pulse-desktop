@@ -1,13 +1,14 @@
 {
-  "version": "0.20.11",
+  "version": "0.20.12",
   "date": "2026-11-09",
   "notes": [
-    "Переключение треков нагружает процессор в несколько раз меньше: скрытые разделы и длинные списки больше не перерисовываются целиком",
-    "Звук из Яндекс Музыки подгружается равномерно, без резкого всплеска нагрузки в начале трека"
+    "Живой текст меньше нагружает видеокарту при смене трека",
+    "Звуковая обработка засыпает на паузе и не расходует процессор",
+    "В журнал программы записывается нагрузка в первые секунды трека — это поможет найти причину всплесков"
   ],
-  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.11/pulse-app-0.20.11.zip",
-  "sha256": "b7a8f40cb75598a50e2393a08ce2e44f00a878cdd195a7927c1a91b3701536a6",
-  "size": 828468,
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.12/pulse-app-0.20.12.zip",
+  "sha256": "537a8788da068606ef75b9ba8a8c378d361e26223694ae4d955d4efba0661df4",
+  "size": 829988,
   "minElectron": "33.2.1",
   "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
   "online": "https://pulse-online.pulsmusic.workers.dev"

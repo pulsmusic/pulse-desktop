@@ -1,0 +1,15 @@
+{
+  "version": "0.20.12",
+  "date": "2026-11-09",
+  "notes": [
+    "Живой текст меньше нагружает видеокарту при смене трека",
+    "Звуковая обработка засыпает на паузе и не расходует процессор",
+    "В журнал программы записывается нагрузка в первые секунды трека — это поможет найти причину всплесков"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.12/pulse-app-0.20.12.zip",
+  "sha256": "537a8788da068606ef75b9ba8a8c378d361e26223694ae4d955d4efba0661df4",
+  "size": 829988,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
