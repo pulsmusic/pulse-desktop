@@ -18,7 +18,10 @@ W="$(mktemp -d)"
 EC="${ELECTRON_CACHE:-}"; EN="electron-v$EV-darwin-$ARCH.zip"
 if [ -n "$EC" ] && [ -f "$EC/$EN" ] && echo "$SHA  $EC/$EN" | shasum -a 256 -c - >/dev/null 2>&1; then cp "$EC/$EN" "$W/e.zip"
 else
-  curl -fsSL --retry 8 --retry-all-errors --retry-delay 10 -o "$W/e.zip" "https://github.com/electron/electron/releases/download/v$EV/$EN"
+  # GitHub — основной адрес; если он отвечает ошибками — зеркало (файл тот же: ниже сверка SHA-256)
+  curl -fsSL --retry 5 --retry-all-errors --retry-delay 8 -o "$W/e.zip" "https://github.com/electron/electron/releases/download/v$EV/$EN" \
+    || curl -fsSL --retry 5 --retry-all-errors --retry-delay 8 -o "$W/e.zip" "https://npmmirror.com/mirrors/electron/$EV/$EN"
+  echo "$SHA  $W/e.zip" | shasum -a 256 -c -
   if [ -n "$EC" ]; then mkdir -p "$EC" && cp "$W/e.zip" "$EC/$EN"; fi
 fi
 echo "$SHA  $W/e.zip" | shasum -a 256 -c -
