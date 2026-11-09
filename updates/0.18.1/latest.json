@@ -1,0 +1,15 @@
+{
+  "version": "0.18.1",
+  "date": "2026-11-09",
+  "notes": [
+    "Статистика исполнителя показывается компактными капсулами в одну строку.",
+    "Изменение числа слушателей за месяц отображается в процентах со стрелкой; точное число — во всплывающей подсказке.",
+    "У отмеченных треков сердечко отображается без подложки."
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.18.1/pulse-app-0.18.1.zip",
+  "sha256": "df066df07193edcf6e99c49ab0782c33433bac8dc2b9535730c8323a53949265",
+  "size": 728405,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
