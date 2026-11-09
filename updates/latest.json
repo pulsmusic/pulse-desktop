@@ -1,13 +1,13 @@
 {
-  "version": "0.20.14",
+  "version": "0.20.15",
   "date": "2026-11-09",
   "notes": [
-    "Обложки «Любимых треков», «Недавних» и плейлистов больше не дрожат при нажатии",
-    "Подборки «Собрано для вас» и «Лучшее артистов» открываются так же плавно, как «Любимые треки»: шапка появляется сразу, а описание и число треков проявляются на своём месте без скачков"
+    "На фоне вместо световых лучей — большая звезда в цвете профиля, которая плавно раскачивается, как маятник",
+    "Мягкие переходы цвета на фоне больше не идут ступеньками на экранах с невысокой глубиной цвета"
   ],
-  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.14/pulse-app-0.20.14.zip",
-  "sha256": "5fbb02b9ec41a7f1e0580d08334d24aabd5691ec779f90d5cab3f675705bd149",
-  "size": 830440,
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.15/pulse-app-0.20.15.zip",
+  "sha256": "1c05bafc78bcedf7adaaded84816f74fb669f465ffaa12ea983fa466ead503fd",
+  "size": 848422,
   "minElectron": "33.2.1",
   "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
   "online": "https://pulse-online.pulsmusic.workers.dev"
