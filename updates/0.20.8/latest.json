@@ -1,0 +1,14 @@
+{
+  "version": "0.20.8",
+  "date": "2026-11-09",
+  "notes": [
+    "Новый вид подборок «Собрано для вас» на главной: цветное матовое стекло и объёмный знак каждой подборки",
+    "Новый вид карточек «Лучшее артистов»: стекло в цвете фото и круглое фото артиста"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.8/pulse-app-0.20.8.zip",
+  "sha256": "3b9f78359c42475c75a9231fea050d628f8b8bf7724f6839698ca3c948356fc9",
+  "size": 827528,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}

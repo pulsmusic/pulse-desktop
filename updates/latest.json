@@ -1,12 +1,13 @@
 {
-  "version": "0.20.7",
+  "version": "0.20.8",
   "date": "2026-11-09",
   "notes": [
-    "В Диспетчере задач Windows программа теперь называется «Пульс» и показывается со своим значком; все её процессы собраны в одну задачу. Изменение вступает в силу со второго запуска после обновления"
+    "Новый вид подборок «Собрано для вас» на главной: цветное матовое стекло и объёмный знак каждой подборки",
+    "Новый вид карточек «Лучшее артистов»: стекло в цвете фото и круглое фото артиста"
   ],
-  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.7/pulse-app-0.20.7.zip",
-  "sha256": "17088e4b202dea4a0fed9a3197c1a73fc12822f876566a91e2b1a46fd8966eb4",
-  "size": 827052,
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.8/pulse-app-0.20.8.zip",
+  "sha256": "3b9f78359c42475c75a9231fea050d628f8b8bf7724f6839698ca3c948356fc9",
+  "size": 827528,
   "minElectron": "33.2.1",
   "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
   "online": "https://pulse-online.pulsmusic.workers.dev"
