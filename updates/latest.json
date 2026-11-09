@@ -1,12 +1,13 @@
 {
-  "version": "0.20.3",
+  "version": "0.20.4",
   "date": "2026-11-09",
   "notes": [
-    "Профиль и раздел «Друзья» показывают дополнительный ник официального аккаунта."
+    "Фото и имя профиля теперь одинаковые на всех компьютерах и видны друзьям.",
+    "Исправлена ошибка, из-за которой фото, установленное до входа в аккаунт «Пульса», не отображалось на других устройствах и у друзей."
   ],
-  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.3/pulse-app-0.20.3.zip",
-  "sha256": "8e588cf83205bb177bb752b376015623126a104ee8965883c8207f85f9d67f53",
-  "size": 735538,
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.4/pulse-app-0.20.4.zip",
+  "sha256": "eabc5206a4c4411ef1064c8137cb9ac1cf7894bf3438de4b622be52badf5f1a3",
+  "size": 735993,
   "minElectron": "33.2.1",
   "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
   "online": "https://pulse-online.pulsmusic.workers.dev"
