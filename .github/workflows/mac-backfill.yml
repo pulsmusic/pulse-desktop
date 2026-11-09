@@ -14,6 +14,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/electron-cache
+          key: electron-33.2.1-darwin
       - name: Какой релиз без Mac
         id: v
         env:
@@ -31,8 +35,8 @@ jobs:
           set -e
           VER="${{ steps.v.outputs.ver }}"; Z="updates/$VER/pulse-app-$VER.zip"
           mkdir -p out
-          bash mac/build.sh "$VER" arm64 "$Z" out/Pulse-Mac-Apple-M.zip
-          bash mac/build.sh "$VER" x64 "$Z" out/Pulse-Mac-Intel.zip
+          ELECTRON_CACHE=~/electron-cache bash mac/build.sh "$VER" arm64 "$Z" out/Pulse-Mac-Apple-M.zip
+          ELECTRON_CACHE=~/electron-cache bash mac/build.sh "$VER" x64 "$Z" out/Pulse-Mac-Intel.zip
           APP="$(cat out/Pulse-Mac-Apple-M.zip.path)"
           ( "$APP/Contents/MacOS/Pulse" --pulse-selftest "$PWD/out/selftest.json" & P=$!; for i in $(seq 1 90); do kill -0 $P 2>/dev/null || break; sleep 1; done; kill $P 2>/dev/null || true )
           python3 -c "import json,sys; r=json.load(open('out/selftest.json')); sys.exit(0 if r.get('ok') and r.get('version')==sys.argv[1] else 1)" "$VER"

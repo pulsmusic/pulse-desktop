@@ -14,7 +14,13 @@ case "$ARCH" in
   *) echo "неизвестная архитектура $ARCH"; exit 1 ;;
 esac
 W="$(mktemp -d)"
-curl -fsSL --retry 6 --retry-all-errors --retry-delay 5 -o "$W/e.zip" "https://github.com/electron/electron/releases/download/v$EV/electron-v$EV-darwin-$ARCH.zip"
+# Electron берётся из кэша GitHub Actions (ELECTRON_CACHE), если он там есть: GitHub иногда отвечает 504 на скачивание
+EC="${ELECTRON_CACHE:-}"; EN="electron-v$EV-darwin-$ARCH.zip"
+if [ -n "$EC" ] && [ -f "$EC/$EN" ] && echo "$SHA  $EC/$EN" | shasum -a 256 -c - >/dev/null 2>&1; then cp "$EC/$EN" "$W/e.zip"
+else
+  curl -fsSL --retry 8 --retry-all-errors --retry-delay 10 -o "$W/e.zip" "https://github.com/electron/electron/releases/download/v$EV/$EN"
+  if [ -n "$EC" ]; then mkdir -p "$EC" && cp "$W/e.zip" "$EC/$EN"; fi
+fi
 echo "$SHA  $W/e.zip" | shasum -a 256 -c -
 ditto -x -k "$W/e.zip" "$W/e"
 mv "$W/e/Electron.app" "$W/Pulse.app"

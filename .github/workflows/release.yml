@@ -23,6 +23,10 @@ jobs:
       ver: ${{ steps.ver.outputs.ver }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/electron-cache
+          key: electron-33.2.1-darwin
       - name: Новая версия
         id: ver
         env:
@@ -62,8 +66,8 @@ jobs:
           VER="${{ needs.ver.outputs.ver }}"; Z="updates/$VER/pulse-app-$VER.zip"
           if ! unzip -l "$Z" | grep -q ' boot.js$'; then echo "в этой версии нет загрузчика для Mac — пропускаю"; exit 0; fi
           mkdir -p out
-          bash mac/build.sh "$VER" arm64 "$Z" out/Pulse-Mac-Apple-M.zip
-          bash mac/build.sh "$VER" x64 "$Z" out/Pulse-Mac-Intel.zip
+          ELECTRON_CACHE=~/electron-cache bash mac/build.sh "$VER" arm64 "$Z" out/Pulse-Mac-Apple-M.zip
+          ELECTRON_CACHE=~/electron-cache bash mac/build.sh "$VER" x64 "$Z" out/Pulse-Mac-Intel.zip
           # самопроверка: программа для Apple M запускается, показывает интерфейс и выходит
           APP="$(cat out/Pulse-Mac-Apple-M.zip.path)"
           ( "$APP/Contents/MacOS/Pulse" --pulse-selftest "$PWD/out/selftest.json" & P=$!; for i in $(seq 1 90); do kill -0 $P 2>/dev/null || break; sleep 1; done; kill $P 2>/dev/null || true )
