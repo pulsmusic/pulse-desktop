@@ -1,12 +1,13 @@
 {
-  "version": "0.20.16",
+  "version": "0.20.17",
   "date": "2026-11-09",
   "notes": [
-    "Убрано зерно поверх фона"
+    "Прокрутка у верха страниц больше не тормозит: при растворении шапки программа пересчитывает только саму шапку, а не весь экран",
+    "Исправлен размер аватарок в разделе «Друзья» во время прокрутки"
   ],
-  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.16/pulse-app-0.20.16.zip",
-  "sha256": "12a39042cc6224a71ba50d6e41cc0ca1a2445f8bb377473d39575bb75e332660",
-  "size": 831209,
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.17/pulse-app-0.20.17.zip",
+  "sha256": "51e076d90fbe0dbfbf0e5b3cda71b1146d979e303217f34d1158ca848c96f6e5",
+  "size": 831338,
   "minElectron": "33.2.1",
   "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
   "online": "https://pulse-online.pulsmusic.workers.dev"
