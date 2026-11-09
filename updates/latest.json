@@ -1,13 +1,13 @@
 {
-  "version": "0.20.10",
+  "version": "0.20.11",
   "date": "2026-11-09",
   "notes": [
-    "Возвращены все визуальные эффекты: живой свет на фоне, плавная полоса воспроизведения, вспышки логотипа и фон большого плеера",
-    "Сохранены улучшения работы с видеокартой, которые снизили нагрузку на процессор"
+    "Переключение треков нагружает процессор в несколько раз меньше: скрытые разделы и длинные списки больше не перерисовываются целиком",
+    "Звук из Яндекс Музыки подгружается равномерно, без резкого всплеска нагрузки в начале трека"
   ],
-  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.10/pulse-app-0.20.10.zip",
-  "sha256": "01b45cf6455bdb1424164f2fb6d4004267f7d55149cd8c13c577daca57a2f01f",
-  "size": 827866,
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.11/pulse-app-0.20.11.zip",
+  "sha256": "b7a8f40cb75598a50e2393a08ce2e44f00a878cdd195a7927c1a91b3701536a6",
+  "size": 828468,
   "minElectron": "33.2.1",
   "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
   "online": "https://pulse-online.pulsmusic.workers.dev"
