@@ -1,13 +1,12 @@
 {
-  "version": "0.20.6",
+  "version": "0.20.7",
   "date": "2026-11-09",
   "notes": [
-    "Новые обложки «Любимых треков», «Недавних», «На компьютере» и пустых плейлистов: матовое стекло в цвете профиля с объёмным значком",
-    "Значки на обложках одного размера и без анимации"
+    "В Диспетчере задач Windows программа теперь называется «Пульс» и показывается со своим значком; все её процессы собраны в одну задачу. Изменение вступает в силу со второго запуска после обновления"
   ],
-  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.6/pulse-app-0.20.6.zip",
-  "sha256": "3d54f8e6bc0ee5ac9f247881e2b1d57d89ea442d195b597c0698f9907d70a922",
-  "size": 736842,
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.7/pulse-app-0.20.7.zip",
+  "sha256": "17088e4b202dea4a0fed9a3197c1a73fc12822f876566a91e2b1a46fd8966eb4",
+  "size": 827052,
   "minElectron": "33.2.1",
   "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
   "online": "https://pulse-online.pulsmusic.workers.dev"
