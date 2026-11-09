@@ -1,0 +1,13 @@
+{
+  "version": "0.20.16",
+  "date": "2026-11-09",
+  "notes": [
+    "Убрано зерно поверх фона"
+  ],
+  "url": "https://github.com/pulsmusic/pulse-desktop/releases/download/v0.20.16/pulse-app-0.20.16.zip",
+  "sha256": "12a39042cc6224a71ba50d6e41cc0ca1a2445f8bb377473d39575bb75e332660",
+  "size": 831209,
+  "minElectron": "33.2.1",
+  "installer": "https://github.com/pulsmusic/pulse-desktop/releases/latest",
+  "online": "https://pulse-online.pulsmusic.workers.dev"
+}
