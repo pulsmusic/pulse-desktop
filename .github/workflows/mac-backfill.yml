@@ -20,9 +20,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG=$(gh release view -R "$GITHUB_REPOSITORY" --json tagName -q .tagName)
-          HAS=$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets -q '[.assets[].name] | index("mac.json")')
+          HAS=$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets -q 'any(.assets[]; .name == "mac.json")')
           VER="${TAG#v}"
-          if [ "$HAS" != "null" ] || [ ! -f "updates/$VER/pulse-app-$VER.zip" ]; then echo "нечего дособирать ($TAG)"; echo "ver=" >> "$GITHUB_OUTPUT"; else echo "ver=$VER" >> "$GITHUB_OUTPUT"; fi
+          if [ "$HAS" = "true" ] || [ ! -f "updates/$VER/pulse-app-$VER.zip" ]; then echo "нечего дособирать ($TAG)"; echo "ver=" >> "$GITHUB_OUTPUT"; else echo "ver=$VER" >> "$GITHUB_OUTPUT"; fi
       - name: Сборка и проверка
         if: steps.v.outputs.ver != ''
         env:
