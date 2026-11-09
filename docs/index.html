@@ -33,6 +33,7 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--acc),var(--acc2))
 .card ul{padding-left:18px;color:var(--ink2);font-size:14px;display:flex;flex-direction:column;gap:4px}
 .cap{font-size:13px;color:var(--ink3);margin-bottom:6px}
 .btn{height:52px;padding:0 28px;border-radius:26px;background:#f5f5f7;color:#111;font:700 16px/1 var(--font);display:inline-flex;align-items:center;gap:10px;border:0;cursor:pointer;text-decoration:none;white-space:nowrap;align-self:flex-start;transition:transform .2s,filter .2s}
+.btn.ghost{background:rgba(255,255,255,.1);color:#f5f5f7;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.2)}
 .btn:hover{filter:brightness(.94)}.btn:active{transform:scale(.97)}
 .btn.off{background:rgba(255,255,255,.08);color:var(--ink3);cursor:default}
 .note{font-size:13px;color:var(--ink3);max-width:460px}
@@ -83,7 +84,8 @@ const IC = {
 const P = {
   win: { name: 'Windows', sys: 'Windows 10 и 11, 64 бит', extra: 'Обновляется сама', file: DL + '/latest/download/Pulse-Desktop-Alpha-Setup.exe', ver: '', size: 0, news: [] },
   and: { name: 'Android', sys: 'Android 8 и новее', extra: 'Обновляется сама', file: DL + '/tag/android', ver: '', size: 0, news: [] },
-  mac: { name: 'macOS', soon: true },
+  mac: { name: 'macOS', sys: 'macOS 11 и новее · Apple M и Intel', extra: 'Обновляется сама', ver: '', size: 0, news: [], files: [['Apple M (M1 и новее)', DL + '/latest/download/Pulse-Mac-Apple-M.zip'], ['Intel', DL + '/latest/download/Pulse-Mac-Intel.zip']],
+    note: 'Распакуйте и перетащите Pulse в «Программы» (старую замените). Первый запуск: macOS спросит, открывать ли программу из интернета — «Системные настройки → Конфиденциальность и безопасность → Всё равно открыть». Дальше «Пульс» обновляется сам.' },
   ios: { name: 'iPhone', soon: true },
 };
 const ORDER = ['win', 'and', 'mac', 'ios'];
@@ -98,12 +100,12 @@ function tabs() {
 }
 function card() {
   const p = P[cur], c = document.getElementById('card');
-  if (p.soon) { c.innerHTML = `<div class="row"><span>${p.name}</span><b>Готовится</b></div><p class="note">Версия для ${p.name} в работе. А пока — Windows и Android.</p><span class="btn off">Скоро</span>`; return; }
+  if (p.soon) { c.innerHTML = `<div class="row"><span>${p.name}</span><b>Готовится</b></div><p class="note">Версия для ${p.name} в работе. А пока — Windows, Mac и Android.</p><span class="btn off">Скоро</span>`; return; }
   c.innerHTML = `<div class="row"><span>Версия</span><b>${p.ver ? esc(p.ver) : sk}</b></div>
     <div class="row"><span>Размер</span><b>${p.size ? mb(p.size) : sk}</b></div>
     <div class="row"><span>Система</span><b>${p.sys}</b></div>
     ${p.news.length ? `<div><div class="cap">Что нового</div><ul>${p.news.slice(0, 4).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
-    <a class="btn" href="${p.file}" rel="noopener">${IC.dl}Скачать для ${p.name}</a>`;
+    ${p.files ? p.files.map(([lb, f], i) => `<a class="btn${i ? ' ghost' : ''}" href="${f}" rel="noopener">${IC.dl}Скачать для ${lb}</a>`).join('') + `<p class="note">${p.note}</p>` : `<a class="btn" href="${p.file}" rel="noopener">${IC.dl}Скачать для ${p.name}</a>`}`;
 }
 const lines = (body) => String(body || '').split(/\r?\n/).map((s) => s.replace(/^\s*[•\-*]\s*/, '').trim()).filter((s) => s && !/^#/.test(s) && s.length < 200);
 async function gh(path) {
@@ -120,7 +122,9 @@ async function load() {
     const exe = (d.assets || []).find((a) => /Setup\.exe$/i.test(a.name));
     P.win.ver = String(d.tag_name || '').replace(/^v/, ''); P.win.news = lines(d.body);
     if (exe) { P.win.size = exe.size; P.win.file = exe.browser_download_url; }
-  } catch { P.win.ver = 'последняя'; }
+    const mz = (d.assets || []).find((a) => a.name === 'Pulse-Mac-Apple-M.zip');
+    P.mac.ver = P.win.ver; P.mac.news = P.win.news; if (mz) P.mac.size = mz.size;
+  } catch { P.win.ver = 'последняя'; P.mac.ver = 'последняя'; }
   try {
     const a = await gh('/releases/tags/android');
     const apk = (a.assets || []).filter((x) => /\.apk$/i.test(x.name)).sort((x, y) => y.updated_at.localeCompare(x.updated_at))[0];
